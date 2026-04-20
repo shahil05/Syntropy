@@ -108,4 +108,22 @@
     </div>
 
   </body>
+
+<script>
+  // 1. Grab the elements
+  const primaryBtn = document.querySelector('.btn-primary')
+  const secondaryBtn = document.querySelector('.btn-secondary')
+  const heading = document.querySelector('h1')
+
+  // 2. Listen for clicks
+  primaryBtn.addEventListener('click', function() {
+    heading.textContent = 'Welcome! Your AI journey starts now.'
+    primaryBtn.textContent = 'You are in!'
+    primaryBtn.style.background = '#22c55e'
+  })
+
+  secondaryBtn.addEventListener('click', function() {
+    alert('The AI remembers everything you learn and builds a roadmap just for you.')
+  })
+</script>
 </html>
