@@ -78,7 +78,16 @@ export default function Home() {
 
       <button
         onClick={() => setScreen('onboard')}
-        style={{ background: '#7F77DD', color: 'white', border: 'none', padding: '14px 32px', borderRadius: '8px', fontSize: '16px', cursor: 'pointer', fontWeight: 600 }}>
+        style={{
+          background: '#7F77DD',
+          color: 'white',
+          border: 'none',
+          padding: '14px 32px',
+          borderRadius: '8px',
+          fontSize: '16px',
+          cursor: 'pointer',
+          fontWeight: 600
+        }}>
         Start learning free →
       </button>
     </main>
@@ -96,8 +105,12 @@ export default function Home() {
       fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
       color: '#fff'
     }}>
-      <h1 style={{ fontSize: '36px', fontWeight: 700, marginBottom: '12px' }}>What do you want to learn?</h1>
-      <p style={{ color: '#555', marginBottom: '28px', fontSize: '15px' }}>Alex will teach it from scratch using first principles.</p>
+      <h1 style={{ fontSize: '36px', fontWeight: 700, marginBottom: '12px' }}>
+        What do you want to learn?
+      </h1>
+      <p style={{ color: '#555', marginBottom: '28px', fontSize: '15px' }}>
+        Alex will teach it from scratch using first principles.
+      </p>
 
       <input
         type="text"
@@ -120,7 +133,16 @@ export default function Home() {
 
       <button
         onClick={() => topic.trim() && setScreen('chat')}
-        style={{ background: '#7F77DD', color: 'white', border: 'none', padding: '12px 28px', borderRadius: '8px', fontSize: '15px', cursor: 'pointer', fontWeight: 500 }}>
+        style={{
+          background: '#7F77DD',
+          color: 'white',
+          border: 'none',
+          padding: '12px 28px',
+          borderRadius: '8px',
+          fontSize: '15px',
+          cursor: 'pointer',
+          fontWeight: 500
+        }}>
         Meet Alex →
       </button>
     </main>
@@ -135,14 +157,31 @@ export default function Home() {
       fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
       color: '#fff'
     }}>
+
       {/* Header */}
-      <div style={{ padding: '14px 24px', borderBottom: '1px solid #1a1a1a', display: 'flex', alignItems: 'center', gap: '12px' }}>
+      <div style={{
+        padding: '14px 24px',
+        borderBottom: '1px solid #1a1a1a',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '12px',
+        position: 'sticky',
+        top: 0,
+        background: '#0f0f0f',
+        zIndex: 10
+      }}>
         <button
           onClick={() => { setScreen('landing'); setMessages([]) }}
           style={{ background: 'transparent', border: 'none', color: '#444', cursor: 'pointer', fontSize: '20px', lineHeight: 1 }}>
           ←
         </button>
-        <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#7F77DD', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '14px' }}>A</div>
+        <div style={{
+          width: '36px', height: '36px', borderRadius: '50%',
+          background: '#7F77DD', display: 'flex', alignItems: 'center',
+          justifyContent: 'center', fontWeight: 700, fontSize: '14px', flexShrink: 0
+        }}>
+          A
+        </div>
         <div>
           <div style={{ fontWeight: 600, fontSize: '14px' }}>Alex — AI Tutor</div>
           <div style={{ fontSize: '11px', color: '#7F77DD' }}>Teaching: {topic}</div>
@@ -150,7 +189,17 @@ export default function Home() {
       </div>
 
       {/* Messages */}
-      <div style={{ flex: 1, padding: '24px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '740px', width: '100%', margin: '0 auto' }}>
+      <div style={{
+        flex: 1,
+        padding: '24px',
+        overflowY: 'auto',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '24px',
+        maxWidth: '740px',
+        width: '100%',
+        margin: '0 auto'
+      }}>
 
         {messages.length === 0 && (
           <div style={{ textAlign: 'center', marginTop: '80px' }}>
@@ -164,16 +213,28 @@ export default function Home() {
         )}
 
         {messages.map((msg, i) => (
-          <div key={i} style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start', gap: '10px', alignItems: 'flex-start' }}>
+          <div key={i} style={{
+            display: 'flex',
+            justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start',
+            gap: '10px',
+            alignItems: 'flex-start'
+          }}>
 
             {msg.role === 'ai' && (
-              <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: '#7F77DD', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '12px', flexShrink: 0, marginTop: '4px' }}>A</div>
+              <div style={{
+                width: '30px', height: '30px', borderRadius: '50%',
+                background: '#7F77DD', display: 'flex', alignItems: 'center',
+                justifyContent: 'center', fontWeight: 700, fontSize: '12px',
+                flexShrink: 0, marginTop: '4px'
+              }}>
+                A
+              </div>
             )}
 
             <div style={{
               background: msg.role === 'user' ? '#7F77DD' : '#141414',
               color: '#fff',
-              padding: '12px 16px',
+              padding: '14px 18px',
               borderRadius: msg.role === 'user' ? '18px 18px 4px 18px' : '4px 18px 18px 18px',
               maxWidth: '78%',
               fontSize: '14px',
@@ -181,7 +242,54 @@ export default function Home() {
               border: msg.role === 'ai' ? '1px solid #1f1f1f' : 'none'
             }}>
               {msg.role === 'ai' ? (
-                <ReactMarkdown>{msg.content}</ReactMarkdown>
+                <ReactMarkdown
+                  components={{
+                    p: ({children}) => (
+                      <p style={{ margin: '0 0 12px 0', lineHeight: 1.8 }}>{children}</p>
+                    ),
+                    strong: ({children}) => (
+                      <strong style={{ color: '#AFA9EC', fontWeight: 600 }}>{children}</strong>
+                    ),
+                    ul: ({children}) => (
+                      <ul style={{ paddingLeft: '20px', margin: '8px 0 12px 0' }}>{children}</ul>
+                    ),
+                    ol: ({children}) => (
+                      <ol style={{ paddingLeft: '20px', margin: '8px 0 12px 0' }}>{children}</ol>
+                    ),
+                    li: ({children}) => (
+                      <li style={{ marginBottom: '8px', lineHeight: 1.7 }}>{children}</li>
+                    ),
+                    blockquote: ({children}) => (
+                      <blockquote style={{
+                        borderLeft: '3px solid #7F77DD',
+                        paddingLeft: '14px',
+                        margin: '12px 0',
+                        color: '#888',
+                        fontStyle: 'italic'
+                      }}>{children}</blockquote>
+                    ),
+                    h1: ({children}) => (
+                      <h1 style={{ fontSize: '18px', fontWeight: 700, margin: '16px 0 8px 0', color: '#fff' }}>{children}</h1>
+                    ),
+                    h2: ({children}) => (
+                      <h2 style={{ fontSize: '16px', fontWeight: 600, margin: '14px 0 8px 0', color: '#AFA9EC' }}>{children}</h2>
+                    ),
+                    h3: ({children}) => (
+                      <h3 style={{ fontSize: '14px', fontWeight: 600, margin: '12px 0 6px 0', color: '#AFA9EC' }}>{children}</h3>
+                    ),
+                    code: ({children}) => (
+                      <code style={{
+                        background: '#0f0f0f',
+                        padding: '2px 6px',
+                        borderRadius: '4px',
+                        fontSize: '13px',
+                        color: '#7F77DD'
+                      }}>{children}</code>
+                    ),
+                  }}
+                >
+                  {msg.content}
+                </ReactMarkdown>
               ) : (
                 msg.content
               )}
@@ -191,16 +299,41 @@ export default function Home() {
 
         {loading && (
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-            <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: '#7F77DD', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '12px', flexShrink: 0 }}>A</div>
-            <div style={{ background: '#141414', border: '1px solid #1f1f1f', padding: '12px 16px', borderRadius: '4px 18px 18px 18px', fontSize: '14px', color: '#444' }}>
-              Alex is thinking...
+            <div style={{
+              width: '30px', height: '30px', borderRadius: '50%',
+              background: '#7F77DD', display: 'flex', alignItems: 'center',
+              justifyContent: 'center', fontWeight: 700, fontSize: '12px', flexShrink: 0
+            }}>
+              A
+            </div>
+            <div style={{
+              background: '#141414',
+              border: '1px solid #1f1f1f',
+              padding: '14px 18px',
+              borderRadius: '4px 18px 18px 18px',
+              fontSize: '14px',
+              color: '#555',
+              display: 'flex',
+              gap: '4px',
+              alignItems: 'center'
+            }}>
+              <span>Alex is thinking</span>
+              <span style={{ letterSpacing: '2px' }}>...</span>
             </div>
           </div>
         )}
       </div>
 
       {/* Input */}
-      <div style={{ padding: '16px 24px', borderTop: '1px solid #1a1a1a', maxWidth: '740px', width: '100%', margin: '0 auto', display: 'flex', gap: '10px' }}>
+      <div style={{
+        padding: '16px 24px',
+        borderTop: '1px solid #1a1a1a',
+        maxWidth: '740px',
+        width: '100%',
+        margin: '0 auto',
+        display: 'flex',
+        gap: '10px'
+      }}>
         <input
           type="text"
           placeholder="Ask Alex anything..."
@@ -212,7 +345,7 @@ export default function Home() {
             background: '#141414',
             border: '1px solid #2a2a2a',
             color: '#fff',
-            padding: '12px 16px',
+            padding: '13px 16px',
             borderRadius: '8px',
             fontSize: '14px',
             outline: 'none'
@@ -222,19 +355,20 @@ export default function Home() {
           onClick={sendMessage}
           disabled={loading}
           style={{
-            background: loading ? '#333' : '#7F77DD',
-            color: 'white',
+            background: loading ? '#222' : '#7F77DD',
+            color: loading ? '#555' : 'white',
             border: 'none',
-            padding: '12px 20px',
+            padding: '12px 22px',
             borderRadius: '8px',
             fontSize: '14px',
             cursor: loading ? 'not-allowed' : 'pointer',
             fontWeight: 500,
-            transition: 'background 0.2s'
+            transition: 'all 0.2s'
           }}>
           {loading ? '...' : 'Send'}
         </button>
       </div>
+
     </main>
   )
 }
