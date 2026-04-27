@@ -11,6 +11,18 @@ export default function Home() {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
+  const [gaps, setGaps] = useState<any>(null)
+  const [showGaps, setShowGaps] = useState(false)
+  const [analyzingGaps, setAnalyzingGaps] = useState(false)
+
+  const [userId] = useState(() => {
+    if (typeof window === 'undefined') return 'user-default'
+    const stored = localStorage.getItem('userId')
+    if (stored) return stored
+    const newId = 'user-' + Math.random().toString(36).substr(2, 9)
+    localStorage.setItem('userId', newId)
+    return newId
+  })
 
   async function sendMessage() {
     if (!input.trim()) return
@@ -29,7 +41,8 @@ export default function Home() {
         body: JSON.stringify({
           message: input,
           topic,
-          history: updatedMessages
+          history: updatedMessages,
+          userId
         })
       })
 
@@ -39,6 +52,20 @@ export default function Home() {
       setMessages(prev => [...prev, { role: 'ai', content: 'Something went wrong. Please try again.' }])
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function analyzeGaps() {
+    setShowGaps(true)
+    setAnalyzingGaps(true)
+    try {
+      const res = await fetch(`/api/gaps?userId=${userId}&topic=${topic}`)
+      const data = await res.json()
+      setGaps(data.gaps)
+    } catch (err) {
+      console.error('Gap analysis failed')
+    } finally {
+      setAnalyzingGaps(false)
     }
   }
 
@@ -66,13 +93,26 @@ export default function Home() {
         AI-Powered Learning
       </div>
 
-      <h1 style={{ fontSize: '48px', fontWeight: 700, textAlign: 'center', marginBottom: '20px', lineHeight: 1.2 }}>
+      <h1 style={{
+        fontSize: '48px',
+        fontWeight: 700,
+        textAlign: 'center',
+        marginBottom: '20px',
+        lineHeight: 1.2
+      }}>
         Learn smarter with{' '}
         <span style={{ color: '#7F77DD' }}>AI</span>
         {' '}that remembers you
       </h1>
 
-      <p style={{ fontSize: '18px', color: '#888', textAlign: 'center', maxWidth: '500px', lineHeight: 1.7, marginBottom: '36px' }}>
+      <p style={{
+        fontSize: '18px',
+        color: '#888',
+        textAlign: 'center',
+        maxWidth: '500px',
+        lineHeight: 1.7,
+        marginBottom: '36px'
+      }}>
         Your personal AI tutor that teaches from first principles, adapts to your pace, and never moves on until you actually get it.
       </p>
 
@@ -171,10 +211,11 @@ export default function Home() {
         zIndex: 10
       }}>
         <button
-          onClick={() => { setScreen('landing'); setMessages([]) }}
+          onClick={() => { setScreen('landing'); setMessages([]); setGaps(null); setShowGaps(false) }}
           style={{ background: 'transparent', border: 'none', color: '#444', cursor: 'pointer', fontSize: '20px', lineHeight: 1 }}>
           ←
         </button>
+
         <div style={{
           width: '36px', height: '36px', borderRadius: '50%',
           background: '#7F77DD', display: 'flex', alignItems: 'center',
@@ -182,9 +223,41 @@ export default function Home() {
         }}>
           A
         </div>
+
         <div>
           <div style={{ fontWeight: 600, fontSize: '14px' }}>Alex — AI Tutor</div>
           <div style={{ fontSize: '11px', color: '#7F77DD' }}>Teaching: {topic}</div>
+        </div>
+
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {messages.length > 0 && (
+            <div style={{
+              fontSize: '11px',
+              color: '#7F77DD',
+              background: '#1a1a2e',
+              padding: '3px 10px',
+              borderRadius: '999px',
+              border: '1px solid #7F77DD33'
+            }}>
+              🧠 Memory active
+            </div>
+          )}
+
+          {messages.length >= 4 && (
+            <button
+              onClick={analyzeGaps}
+              style={{
+                fontSize: '11px',
+                color: '#fff',
+                background: '#7F77DD',
+                padding: '4px 12px',
+                borderRadius: '999px',
+                border: 'none',
+                cursor: 'pointer'
+              }}>
+              🔍 Analyze my gaps
+            </button>
+          )}
         </div>
       </div>
 
@@ -219,7 +292,6 @@ export default function Home() {
             gap: '10px',
             alignItems: 'flex-start'
           }}>
-
             {msg.role === 'ai' && (
               <div style={{
                 width: '30px', height: '30px', borderRadius: '50%',
@@ -244,21 +316,11 @@ export default function Home() {
               {msg.role === 'ai' ? (
                 <ReactMarkdown
                   components={{
-                    p: ({children}) => (
-                      <p style={{ margin: '0 0 12px 0', lineHeight: 1.8 }}>{children}</p>
-                    ),
-                    strong: ({children}) => (
-                      <strong style={{ color: '#AFA9EC', fontWeight: 600 }}>{children}</strong>
-                    ),
-                    ul: ({children}) => (
-                      <ul style={{ paddingLeft: '20px', margin: '8px 0 12px 0' }}>{children}</ul>
-                    ),
-                    ol: ({children}) => (
-                      <ol style={{ paddingLeft: '20px', margin: '8px 0 12px 0' }}>{children}</ol>
-                    ),
-                    li: ({children}) => (
-                      <li style={{ marginBottom: '8px', lineHeight: 1.7 }}>{children}</li>
-                    ),
+                    p: ({children}) => <p style={{ margin: '0 0 12px 0', lineHeight: 1.8 }}>{children}</p>,
+                    strong: ({children}) => <strong style={{ color: '#AFA9EC', fontWeight: 600 }}>{children}</strong>,
+                    ul: ({children}) => <ul style={{ paddingLeft: '20px', margin: '8px 0 12px 0' }}>{children}</ul>,
+                    ol: ({children}) => <ol style={{ paddingLeft: '20px', margin: '8px 0 12px 0' }}>{children}</ol>,
+                    li: ({children}) => <li style={{ marginBottom: '8px', lineHeight: 1.7 }}>{children}</li>,
                     blockquote: ({children}) => (
                       <blockquote style={{
                         borderLeft: '3px solid #7F77DD',
@@ -268,15 +330,9 @@ export default function Home() {
                         fontStyle: 'italic'
                       }}>{children}</blockquote>
                     ),
-                    h1: ({children}) => (
-                      <h1 style={{ fontSize: '18px', fontWeight: 700, margin: '16px 0 8px 0', color: '#fff' }}>{children}</h1>
-                    ),
-                    h2: ({children}) => (
-                      <h2 style={{ fontSize: '16px', fontWeight: 600, margin: '14px 0 8px 0', color: '#AFA9EC' }}>{children}</h2>
-                    ),
-                    h3: ({children}) => (
-                      <h3 style={{ fontSize: '14px', fontWeight: 600, margin: '12px 0 6px 0', color: '#AFA9EC' }}>{children}</h3>
-                    ),
+                    h1: ({children}) => <h1 style={{ fontSize: '18px', fontWeight: 700, margin: '16px 0 8px 0' }}>{children}</h1>,
+                    h2: ({children}) => <h2 style={{ fontSize: '16px', fontWeight: 600, margin: '14px 0 8px 0', color: '#AFA9EC' }}>{children}</h2>,
+                    h3: ({children}) => <h3 style={{ fontSize: '14px', fontWeight: 600, margin: '12px 0 6px 0', color: '#AFA9EC' }}>{children}</h3>,
                     code: ({children}) => (
                       <code style={{
                         background: '#0f0f0f',
@@ -312,13 +368,9 @@ export default function Home() {
               padding: '14px 18px',
               borderRadius: '4px 18px 18px 18px',
               fontSize: '14px',
-              color: '#555',
-              display: 'flex',
-              gap: '4px',
-              alignItems: 'center'
+              color: '#555'
             }}>
-              <span>Alex is thinking</span>
-              <span style={{ letterSpacing: '2px' }}>...</span>
+              Alex is thinking...
             </div>
           </div>
         )}
@@ -368,6 +420,96 @@ export default function Home() {
           {loading ? '...' : 'Send'}
         </button>
       </div>
+
+      {/* Gaps Panel */}
+      {showGaps && (
+        <div style={{
+          position: 'fixed',
+          top: 0, right: 0,
+          width: '320px',
+          height: '100vh',
+          background: '#0a0a0a',
+          borderLeft: '1px solid #1f1f1f',
+          padding: '24px',
+          overflowY: 'auto',
+          zIndex: 100
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <div style={{ fontWeight: 600, fontSize: '14px' }}>Knowledge Analysis</div>
+            <button
+              onClick={() => setShowGaps(false)}
+              style={{ background: 'transparent', border: 'none', color: '#555', cursor: 'pointer', fontSize: '20px' }}>
+              ×
+            </button>
+          </div>
+
+          {analyzingGaps ? (
+            <div style={{ color: '#555', fontSize: '13px', textAlign: 'center', marginTop: '60px' }}>
+              Analyzing your learning history...
+            </div>
+          ) : gaps ? (
+            <>
+              <div style={{ marginBottom: '24px' }}>
+                <div style={{ fontSize: '11px', color: '#555', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Overall Mastery</div>
+                <div style={{ fontSize: '36px', fontWeight: 700, color: '#7F77DD' }}>{gaps.overallMasteryScore}%</div>
+                <div style={{ marginTop: '8px', height: '6px', background: '#1a1a1a', borderRadius: '999px' }}>
+                  <div style={{
+                    width: `${gaps.overallMasteryScore}%`,
+                    height: '100%',
+                    background: '#7F77DD',
+                    borderRadius: '999px',
+                    transition: 'width 0.5s ease'
+                  }} />
+                </div>
+              </div>
+
+              {gaps.masteredConcepts?.length > 0 && (
+                <div style={{ marginBottom: '20px' }}>
+                  <div style={{ fontSize: '11px', color: '#22c55e', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>✓ Mastered</div>
+                  {gaps.masteredConcepts.map((c: string, i: number) => (
+                    <div key={i} style={{ fontSize: '13px', color: '#888', padding: '7px 0', borderBottom: '1px solid #111' }}>{c}</div>
+                  ))}
+                </div>
+              )}
+
+              {gaps.weakConcepts?.length > 0 && (
+                <div style={{ marginBottom: '20px' }}>
+                  <div style={{ fontSize: '11px', color: '#f59e0b', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>⚠ Needs work</div>
+                  {gaps.weakConcepts.map((c: string, i: number) => (
+                    <div key={i} style={{ fontSize: '13px', color: '#888', padding: '7px 0', borderBottom: '1px solid #111' }}>{c}</div>
+                  ))}
+                </div>
+              )}
+
+              {gaps.confusedConcepts?.length > 0 && (
+                <div style={{ marginBottom: '20px' }}>
+                  <div style={{ fontSize: '11px', color: '#ef4444', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>✗ Confused</div>
+                  {gaps.confusedConcepts.map((c: string, i: number) => (
+                    <div key={i} style={{ fontSize: '13px', color: '#888', padding: '7px 0', borderBottom: '1px solid #111' }}>{c}</div>
+                  ))}
+                </div>
+              )}
+
+              {gaps.recommendedNextTopic && (
+                <div style={{
+                  background: '#1a1a2e',
+                  border: '1px solid #7F77DD33',
+                  borderRadius: '8px',
+                  padding: '14px',
+                  marginTop: '8px'
+                }}>
+                  <div style={{ fontSize: '11px', color: '#7F77DD', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>📍 Learn next</div>
+                  <div style={{ fontSize: '13px', color: '#fff', lineHeight: 1.5 }}>{gaps.recommendedNextTopic}</div>
+                </div>
+              )}
+            </>
+          ) : (
+            <div style={{ color: '#555', fontSize: '13px', textAlign: 'center', marginTop: '60px' }}>
+              Not enough data yet. Chat more with Alex first!
+            </div>
+          )}
+        </div>
+      )}
 
     </main>
   )
