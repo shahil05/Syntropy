@@ -1,83 +1,151 @@
 import Groq from 'groq-sdk'
+import { Pinecone } from '@pinecone-database/pinecone'
 
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY
-})
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
+const pinecone = new Pinecone({ apiKey: process.env.PINECONE_API_KEY })
+const INDEX_NAME = 'ai-learning-companion'
+
+async function saveMemory(userId, topic, message, role) {
+  try {
+    const index = pinecone.index(INDEX_NAME)
+    await index.upsertRecords([{
+      id: `${userId}-${role}-${Date.now()}`,
+      text: message,
+      userId,
+      topic,
+      role,
+      timestamp: new Date().toISOString()
+    }])
+  } catch (err) {
+    console.error('Save memory failed:', err.message)
+  }
+}
+
+async function fetchMemories(userId, query) {
+  try {
+    const index = pinecone.index(INDEX_NAME)
+    const results = await index.searchRecords({
+      query: { inputs: { text: query }, topK: 5 },
+      filter: { userId: { '$eq': userId } },
+      fields: ['text', 'role', 'topic', 'timestamp']
+    })
+    return results.result.hits.map(h => h.fields)
+  } catch (err) {
+    console.error('Fetch memory failed:', err.message)
+    return []
+  }
+}
+
+async function analyzeGaps(userId, topic) {
+  try {
+    const index = pinecone.index(INDEX_NAME)
+    const results = await index.searchRecords({
+      query: { inputs: { text: topic }, topK: 15 },
+      filter: { userId: { '$eq': userId } },
+      fields: ['text', 'role']
+    })
+
+    const memories = results.result.hits.map(h => h.fields)
+    if (memories.length < 3) return null
+
+    const conversationSummary = memories.map(m => `[${m.role}]: ${m.text}`).join('\n')
+
+    const analysis = await groq.chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
+      messages: [
+        {
+          role: 'system',
+          content: `Analyze this learning conversation and return ONLY valid JSON:
+{
+  "weakConcepts": ["concept1", "concept2"],
+  "confusedConcepts": ["concept1"],
+  "masteredConcepts": ["concept1"]
+}`
+        },
+        { role: 'user', content: `Analyze for ${topic}:\n${conversationSummary}` }
+      ]
+    })
+
+    const rawText = analysis.choices[0].message.content
+    const cleanText = rawText.replace(/```json|```/g, '').trim()
+    return JSON.parse(cleanText)
+
+  } catch (err) {
+    console.error('Gap analysis failed:', err.message)
+    return null
+  }
+}
 
 export async function POST(request) {
   try {
-    const { message, topic, history } = await request.json()
+    const { message, topic, history, userId } = await request.json()
+
+    saveMemory(userId, topic, message, 'user')
+
+    const memories = await fetchMemories(userId, message)
+    const gaps = await analyzeGaps(userId, topic)
+
+    let memoryContext = ''
+    if (memories.length > 0) {
+      memoryContext = `\n\nRELEVANT PAST MEMORIES:\n` +
+        memories.map(m => `- [${m.role}] ${m.text}`).join('\n')
+    }
+
+    let gapContext = ''
+    if (gaps) {
+      gapContext = `\n\nSTUDENT KNOWLEDGE GAPS:\n` +
+        `- Weak areas: ${gaps.weakConcepts?.join(', ') || 'none identified'}\n` +
+        `- Confused about: ${gaps.confusedConcepts?.join(', ') || 'none identified'}\n` +
+        `- Already mastered: ${gaps.masteredConcepts?.join(', ') || 'none identified'}\n\n` +
+        `ADAPTIVE INSTRUCTION: When you ask questions, focus on their weak and confused areas. ` +
+        `Skip concepts they've already mastered unless building on them.`
+    }
 
     const conversationMessages = [
       {
         role: 'system',
-        content: `You are Alex — the best teacher the student has ever had. You are teaching ${topic}.
+        content: `You are Alex — the best teacher the student has ever had. Teaching ${topic}.
 
-FIRST PRINCIPLES TEACHING — your core method:
-- Never open with a definition. Open with a surprising fact or problem that makes them curious.
-- Strip every concept to its most basic truth first, then build upward
-- Use analogies from things a 20-year-old knows: Spotify, Instagram, UPI, cricket, Zomato, movies
+FIRST PRINCIPLES TEACHING:
+- Start with WHY, not definitions
+- Build from basics upward
+- Use analogies from everyday life
 
-YOUR PERSONALITY:
-- Warm, funny, genuinely excited about ${topic}
-- Talk like a brilliant older friend — not a professor
-- When they get something right: celebrate it ("YES! Exactly.")
-- When they're wrong: "Interesting — most people think that. Here's what's actually happening..."
-- Never make them feel stupid
+PERSONALITY:
+- Warm, funny, genuinely excited
+- Celebrate correct answers
+- Never say "wrong" — say "interesting, but here's what's happening..."
 
-YOUR TEACHING FLOW — follow this strictly:
-Step 1 — HOOK: Start with one surprising fact or question. Never skip this.
-Step 2 — FIRST PRINCIPLE: Explain WHY this concept exists. What problem does it solve?
-Step 3 — BUILD UP: Explain HOW it works using one analogy
-Step 4 — EXAMPLE: One concrete real-world example
-Step 5 — CHECK: Ask ONE question max. If they answer anything reasonable, accept it and move forward immediately. Never interrogate.
-Step 6 — Move to the next concept after ONE exchange. Never stay on the same point more than 2 messages.
-Step 7 — If they say "move on", "next", "continue", "got it", "ok" — immediately move to the next concept. No questions. Just teach.
-Step 8 — If confused: use a completely different analogy. Never repeat the same explanation.
+ADAPTIVE TEACHING — CRITICAL:
+- You have access to this student's knowledge gaps below
+- Ask questions ONLY about their weak/confused areas
+- When they answer correctly, move to next weak area
+- When they answer incorrectly, explain differently and re-test
+- NEVER ask about concepts they've mastered unless building on them
+- After every explanation, ask ONE targeted question about their weakest concept${gapContext}${memoryContext}
 
-CONVERSATION RULES:
-- Read the full history before responding
-- Never repeat what you already explained
-- Always build on previous answers
-- If they reference something from earlier, acknowledge it
-- Adjust difficulty based on how they're responding
+FLOW:
+1. Hook with surprising fact
+2. Explain WHY it exists
+3. Build up layer by layer
+4. Give concrete example
+5. Ask ONE question targeting their weakest area
+6. Move forward after one exchange
 
-FORMAT — strictly follow:
-- Max 2 lines before a line break
-- **Bold** the single most important term per response
-- Bullet points for lists of 3 or more
-- End with a question ONLY when introducing a brand new concept — not every message
-- If continuing or moving forward, just teach. No question needed.
-- Hard limit: 130 words per response
+FORMAT:
+- Max 2 lines before line break
+- **Bold** key terms
+- Bullet points for 3+ items
+- Ask question only when introducing new concept OR testing weak area
+- 130 word limit (ignore for roadmaps)
 
-SPECIAL CASES — override the 130 word limit for these:
-- If the student asks for a "roadmap", "plan", "guide", "how long", "schedule", or "where to start":
-  → Ignore the word limit completely
-  → Give a full structured roadmap with phases (Week 1, Week 2 etc.)
-  → For each phase: what to learn, how many hours per day, free resources to use
-  → Be specific — not "learn Python" but "learn Python variables, loops, functions — 1 hour/day for 7 days using freeCodeCamp"
-  → End with a motivating note, no question needed
-  
-- If the student asks for a "list", "steps", "breakdown", "explain everything":
-  → Give the full detailed answer, don't cut short
-  → Use numbered lists with sub-bullets
-  → Be thorough, not brief
-
-NEVER:
-- Write walls of text
-- Ask more than 1 question per message
-- Stay stuck on one concept for more than 2 exchanges
-- Repeat the same analogy twice
-- Use academic language when simple words work`
+SPECIAL: If asked for roadmap/plan → give full week-by-week breakdown`
       },
       ...history.map((msg) => ({
         role: msg.role === 'ai' ? 'assistant' : 'user',
         content: msg.content
       })),
-      {
-        role: 'user',
-        content: message
-      }
+      { role: 'user', content: message }
     ]
 
     const completion = await groq.chat.completions.create({
@@ -85,14 +153,13 @@ NEVER:
       messages: conversationMessages
     })
 
-    return Response.json({
-      reply: completion.choices[0].message.content
-    })
+    const reply = completion.choices[0].message.content
+    saveMemory(userId, topic, reply, 'ai')
+
+    return Response.json({ reply })
 
   } catch (error) {
-    console.error('Groq error:', error.message)
-    return Response.json({
-      reply: 'Error: ' + error.message
-    }, { status: 500 })
+    console.error('Chat error:', error.message)
+    return Response.json({ reply: 'Error: ' + error.message }, { status: 500 })
   }
 }
