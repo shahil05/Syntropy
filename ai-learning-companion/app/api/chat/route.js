@@ -78,7 +78,7 @@ async function analyzeGaps(userId, topic) {
 
 export async function POST(request) {
   try {
-    const { message, topic, history, userId } = await request.json()
+    const { message, topic, history, userId, socraticMode } = await request.json()
 
     saveMemory(userId, topic, message, 'user')
 
@@ -122,7 +122,19 @@ ADAPTIVE TEACHING — CRITICAL:
 - When they answer correctly, move to next weak area
 - When they answer incorrectly, explain differently and re-test
 - NEVER ask about concepts they've mastered unless building on them
-- After every explanation, ask ONE targeted question about their weakest concept${gapContext}${memoryContext}
+- After every explanation, ask ONE targeted question about their weakest concept
+
+${socraticMode ? `
+SOCRATIC MODE ACTIVE — NEVER GIVE DIRECT ANSWERS:
+- When asked a question, respond with 2-3 leading questions that guide them to the answer
+- Use analogies from things they already know
+- Break complex questions into smaller questions
+- If they get stuck, give a tiny hint in the form of another question
+- Only after 2-3 exchanges can you confirm their answer
+- Example: "What's a loop?" → "Have you ever done the same task over and over? Like checking your phone every 5 minutes? What would you call that pattern?"
+- NEVER say "A loop is..." — always ask questions that make THEM say it
+` : ''}${gapContext}${memoryContext}
+
 
 FLOW:
 1. Hook with surprising fact

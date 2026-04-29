@@ -14,6 +14,7 @@ export default function Home() {
   const [gaps, setGaps] = useState<any>(null)
   const [showGaps, setShowGaps] = useState(false)
   const [analyzingGaps, setAnalyzingGaps] = useState(false)
+  const [socraticMode, setSocraticMode] = useState(false)
 
   const [userId] = useState(() => {
     if (typeof window === 'undefined') return 'user-default'
@@ -42,7 +43,8 @@ export default function Home() {
           message: input,
           topic,
           history: updatedMessages,
-          userId
+          userId,
+          socraticMode
         })
       })
 
@@ -199,7 +201,23 @@ export default function Home() {
     }}>
 
       {/* Header */}
-      <div style={{
+
+      <button
+        onClick={() => setSocraticMode(!socraticMode)}
+        style={{
+          fontSize: '11px',
+          color: socraticMode ? '#fff' : '#888',
+          background: socraticMode ? '#7F77DD' : 'transparent',
+          padding: '4px 12px',
+          borderRadius: '999px',
+          border: socraticMode ? 'none' : '1px solid #333',
+          cursor: 'pointer',
+          transition: 'all 0.2s'
+       }}>
+        {socraticMode ? '💡 Socratic ON' : '💭 Socratic mode'}
+      </button>
+      
+    <div style={{
         padding: '14px 24px',
         borderBottom: '1px solid #1a1a1a',
         display: 'flex',
