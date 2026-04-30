@@ -15,6 +15,8 @@ export default function Home() {
   const [showGaps, setShowGaps] = useState(false)
   const [analyzingGaps, setAnalyzingGaps] = useState(false)
   const [socraticMode, setSocraticMode] = useState(false)
+  const [showProgress, setShowProgress] = useState(false)
+  const [stats, setStats] = useState<any>(null)
 
   const [userId] = useState(() => {
     if (typeof window === 'undefined') return 'user-default'
@@ -70,6 +72,16 @@ export default function Home() {
       setAnalyzingGaps(false)
     }
   }
+  async function fetchStats() {
+  setShowProgress(true)
+  try {
+    const res = await fetch(`/api/stats?userId=${userId}`)
+    const data = await res.json()
+    setStats(data)
+  } catch (err) {
+    console.error('Stats failed')
+  }
+}
 
   if (screen === 'landing') return (
     <main style={{
@@ -215,6 +227,20 @@ export default function Home() {
           transition: 'all 0.2s'
        }}>
         {socraticMode ? '💡 Socratic ON' : '💭 Socratic mode'}
+      </button>
+
+      <button
+        onClick={fetchStats}
+        style={{
+          fontSize: '11px',
+          color: '#fff',
+          background: '#22c55e',
+          padding: '4px 12px',
+          borderRadius: '999px',
+          border: 'none',
+          cursor: 'pointer'
+        }}>
+        📊 My Progress
       </button>
       
     <div style={{
@@ -528,6 +554,114 @@ export default function Home() {
           )}
         </div>
       )}
+      {showProgress && (
+  <div style={{
+    position: 'fixed',
+    top: '50%', left: '50%',
+    transform: 'translate(-50%, -50%)',
+    width: '500px',
+    maxHeight: '80vh',
+    background: '#0a0a0a',
+    border: '1px solid #1f1f1f',
+    borderRadius: '12px',
+    padding: '28px',
+    overflowY: 'auto',
+    zIndex: 200,
+    boxShadow: '0 8px 32px rgba(0,0,0,0.8)'
+  }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+      <div style={{ fontWeight: 700, fontSize: '18px' }}>Your Learning Progress</div>
+      <button
+        onClick={() => setShowProgress(false)}
+        style={{ background: 'transparent', border: 'none', color: '#555', cursor: 'pointer', fontSize: '20px' }}>
+        ×
+      </button>
+    </div>
+
+    {stats ? (
+      <>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
+          <div style={{ background: '#141414', padding: '16px', borderRadius: '8px', border: '1px solid #1f1f1f' }}>
+            <div style={{ fontSize: '11px', color: '#555', marginBottom: '6px', textTransform: 'uppercase' }}>Total Sessions</div>
+            <div style={{ fontSize: '28px', fontWeight: 700, color: '#7F77DD' }}>{stats.totalSessions}</div>
+          </div>
+
+          <div style={{ background: '#141414', padding: '16px', borderRadius: '8px', border: '1px solid #1f1f1f' }}>
+            <div style={{ fontSize: '11px', color: '#555', marginBottom: '6px', textTransform: 'uppercase' }}>Learning Streak</div>
+            <div style={{ fontSize: '28px', fontWeight: 700, color: '#f59e0b' }}>{stats.streak} days</div>
+          </div>
+        </div>
+
+        <div style={{ marginBottom: '24px' }}>
+          <div style={{ fontSize: '11px', color: '#555', marginBottom: '8px', textTransform: 'uppercase' }}>Overall Mastery</div>
+          <div style={{ fontSize: '32px', fontWeight: 700, color: '#22c55e', marginBottom: '8px' }}>{stats.overallMastery}%</div>
+          <div style={{ height: '8px', background: '#1a1a1a', borderRadius: '999px' }}>
+            <div style={{
+              width: `${stats.overallMastery}%`,
+              height: '100%',
+              background: 'linear-gradient(90deg, #22c55e, #7F77DD)',
+              borderRadius: '999px',
+              transition: 'width 0.5s ease'
+            }} />
+          </div>
+        </div>
+
+        <div>
+          <div style={{ fontSize: '13px', fontWeight: 600, marginBottom: '12px', color: '#fff' }}>Topics Studied</div>
+          {stats.topicsStudied.length === 0 ? (
+            <div style={{ color: '#555', fontSize: '13px', textAlign: 'center', padding: '20px' }}>
+              No topics yet. Start learning!
+            </div>
+          ) : (
+            stats.topicsStudied.map((topic: any, i: number) => (
+              <div key={i} style={{
+                background: '#141414',
+                border: '1px solid #1f1f1f',
+                borderRadius: '8px',
+                padding: '12px 16px',
+                marginBottom: '8px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+              }}>
+                <div>
+                  <div style={{ fontSize: '14px', fontWeight: 500, color: '#fff', marginBottom: '4px' }}>{topic.name}</div>
+                  <div style={{ fontSize: '11px', color: '#555' }}>Last studied: {topic.lastStudied}</div>
+                </div>
+                <div style={{
+                  fontSize: '12px',
+                  color: '#7F77DD',
+                  background: '#1a1a2e',
+                  padding: '4px 10px',
+                  borderRadius: '999px'
+                }}>
+                  {topic.messageCount} messages
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </>
+    ) : (
+      <div style={{ color: '#555', fontSize: '13px', textAlign: 'center', marginTop: '60px' }}>
+        Loading your stats...
+      </div>
+    )}
+  </div>
+)}
+
+{showProgress && (
+  <div
+    onClick={() => setShowProgress(false)}
+    style={{
+      position: 'fixed',
+      top: 0, left: 0,
+      width: '100vw', height: '100vh',
+      background: 'rgba(0,0,0,0.7)',
+      zIndex: 199
+    }}
+  />
+)}
 
     </main>
   )

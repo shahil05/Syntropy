@@ -8,7 +8,7 @@ const INDEX_NAME = 'ai-learning-companion'
 async function saveMemory(userId, topic, message, role) {
   try {
     const index = pinecone.index(INDEX_NAME)
-    await index.upsertRecords([{
+    await index.upsert([{
       id: `${userId}-${role}-${Date.now()}`,
       text: message,
       userId,
