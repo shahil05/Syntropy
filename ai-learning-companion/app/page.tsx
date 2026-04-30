@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import ReactMarkdown from 'react-markdown'
 
 type Message = { role: 'user' | 'ai', content: string }
@@ -17,7 +17,12 @@ export default function Home() {
   const [socraticMode, setSocraticMode] = useState(false)
   const [showProgress, setShowProgress] = useState(false)
   const [stats, setStats] = useState<any>(null)
-
+   
+  const [sessions, setSessions] = useState<any[]>(() => {
+     if (typeof window === 'undefined') return []
+      const stored = localStorage.getItem('learningSessions')
+      return stored ? JSON.parse(stored) : []
+  })
   const [userId] = useState(() => {
     if (typeof window === 'undefined') return 'user-default'
     const stored = localStorage.getItem('userId')
@@ -26,6 +31,18 @@ export default function Home() {
     localStorage.setItem('userId', newId)
     return newId
   })
+  useEffect(() => {
+    if (messages.length > 0 && messages.length % 5 === 0) {
+      const session = {
+        topic,
+        messageCount: messages.length,
+        timestamp: new Date().toISOString()
+      }
+      const updated = [...sessions, session]
+      setSessions(updated)
+      localStorage.setItem('learningSessions', JSON.stringify(updated))
+    }
+  }, [messages.length, topic, sessions])
 
   async function sendMessage() {
     if (!input.trim()) return
@@ -60,17 +77,26 @@ export default function Home() {
   }
 
   async function analyzeGaps() {
-    setShowGaps(true)
-    setAnalyzingGaps(true)
-    try {
-      const res = await fetch(`/api/gaps?userId=${userId}&topic=${topic}`)
-      const data = await res.json()
-      setGaps(data.gaps)
-    } catch (err) {
-      console.error('Gap analysis failed')
-    } finally {
-      setAnalyzingGaps(false)
-    }
+   if (messages.length < 6) {
+     alert('Have a longer conversation first!')
+     return
+   }
+  
+   setShowGaps(true)
+   setAnalyzingGaps(true)
+   try {
+      const res = await fetch('/api/gaps', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ history: messages, topic })
+      })
+    const data = await res.json()
+    setGaps(data.gaps)
+  } catch (err) {
+    console.error('Gap analysis failed')
+  } finally {
+    setAnalyzingGaps(false)
+  }
   }
   async function fetchStats() {
   setShowProgress(true)
@@ -662,6 +688,7 @@ export default function Home() {
     }}
   />
 )}
+
 
     </main>
   )
