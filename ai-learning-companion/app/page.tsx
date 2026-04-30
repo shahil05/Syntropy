@@ -31,18 +31,29 @@ export default function Home() {
     localStorage.setItem('userId', newId)
     return newId
   })
-  useEffect(() => {
-    if (messages.length > 0 && messages.length % 5 === 0) {
-      const session = {
-        topic,
-        messageCount: messages.length,
-        timestamp: new Date().toISOString()
-      }
-      const updated = [...sessions, session]
-      setSessions(updated)
-      localStorage.setItem('learningSessions', JSON.stringify(updated))
-    }
-  }, [messages.length, topic, sessions])
+// app/page.tsx 
+
+useEffect(() => {
+  // Only run logic if we have messages and it's a multiple of 5
+  if (messages.length > 0 && messages.length % 5 === 0) {
+    const session = {
+      topic,
+      messageCount: messages.length,
+      timestamp: new Date().toISOString()
+    };
+
+    // Use a functional update (prevSessions)
+    // This way we don't need 'sessions' in the dependency array
+    setSessions(prevSessions => {
+      const updated = [...prevSessions, session];
+      localStorage.setItem('learningSessions', JSON.stringify(updated));
+      return updated;
+    });
+  }
+  
+  // ONLY messages.length and topic should be here.
+  // REMOVE 'sessions' from this array!
+}, [messages.length, topic]);
 
   async function sendMessage() {
     if (!input.trim()) return
@@ -77,7 +88,7 @@ export default function Home() {
   }
 
   async function analyzeGaps() {
-   if (messages.length < 6) {
+   if (messages.length < 2) {
      alert('Have a longer conversation first!')
      return
    }
@@ -91,6 +102,9 @@ export default function Home() {
         body: JSON.stringify({ history: messages, topic })
       })
     const data = await res.json()
+    
+    console.log("🚨 BACKEND RESPONSE:", data) // ADD THIS LINE!
+    
     setGaps(data.gaps)
   } catch (err) {
     console.error('Gap analysis failed')
@@ -101,11 +115,15 @@ export default function Home() {
   async function fetchStats() {
   setShowProgress(true)
   try {
-    const res = await fetch(`/api/stats?userId=${userId}`)
+    const res = await fetch('/api/stats', {
+      method: 'POST', // Change this from GET to POST
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessions }) // Send the sessions from your state
+    })
     const data = await res.json()
     setStats(data)
   } catch (err) {
-    console.error('Stats failed')
+    console.warn('Stats failed', err) 
   }
 }
 

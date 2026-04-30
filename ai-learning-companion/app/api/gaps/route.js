@@ -1,46 +1,50 @@
-import Groq from 'groq-sdk'
-
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
+import { NextResponse } from 'next/server';
+import Groq from 'groq-sdk';
 
 export async function POST(request) {
   try {
-    const { history, topic } = await request.json()
+    const { history, topic } = await request.json();
 
-    if (history.length < 6) {
-      return Response.json({
-        gaps: null,
-        message: 'Not enough conversation yet'
-      })
+    // 1. Move this inside to catch key errors
+    if (!process.env.GROQ_API_KEY) {
+      return NextResponse.json({ error: "GROQ_API_KEY is missing in .env.local" }, { status: 500 });
+    }
+    const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+
+    if (!history || history.length < 2) {
+      return NextResponse.json({ gaps: null, message: 'More chat needed' });
     }
 
-    const conversationSummary = history.map(m => `[${m.role}]: ${m.content}`).join('\n')
+    const conversationSummary = history.map(m => `[${m.role}]: ${m.content}`).join('\n');
 
+    // 2. Added response_format: { type: "json_object" }
     const analysis = await groq.chat.completions.create({
       model: 'llama-3.3-70b-versatile',
+      response_format: { type: "json_object" }, 
       messages: [
         {
           role: 'system',
-          content: `Analyze and return ONLY valid JSON:
-{
-  "weakConcepts": ["concept1"],
-  "confusedConcepts": ["concept1"],
-  "masteredConcepts": ["concept1"],
-  "recommendedNextTopic": "what to learn next",
-  "overallMasteryScore": 45
-}`
+          content: `Analyze the user's understanding of ${topic}. Return ONLY a JSON object:
+          {
+            "weakConcepts": [],
+            "confusedConcepts": [],
+            "masteredConcepts": [],
+            "recommendedNextTopic": "",
+            "overallMasteryScore": 0
+          }`
         },
-        { role: 'user', content: `Analyze ${topic}:\n${conversationSummary}` }
+        { role: 'user', content: conversationSummary }
       ]
-    })
+    });
 
-    const rawText = analysis.choices[0].message.content
-    const cleanText = rawText.replace(/```json|```/g, '').trim()
-    const gaps = JSON.parse(cleanText)
+    // 3. Bulletproof parsing
+    const content = analysis.choices[0].message.content;
+    const gaps = JSON.parse(content);
 
-    return Response.json({ gaps })
+    return NextResponse.json({ gaps });
 
   } catch (error) {
-    console.error('Gaps error:', error)
-    return Response.json({ error: error.message }, { status: 500 })
+    console.error('SERVER ERROR:', error.message);
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
