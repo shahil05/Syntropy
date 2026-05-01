@@ -17,6 +17,9 @@ export default function Home() {
   const [socraticMode, setSocraticMode] = useState(false)
   const [showProgress, setShowProgress] = useState(false)
   const [stats, setStats] = useState<any>(null)
+  const [showRoadmap, setShowRoadmap] = useState(false)
+  const [roadmap, setRoadmap] = useState<any>(null)
+  const [loadingRoadmap, setLoadingRoadmap] = useState(false)
    
   const [sessions, setSessions] = useState<any[]>(() => {
      if (typeof window === 'undefined') return []
@@ -124,6 +127,33 @@ useEffect(() => {
     setStats(data)
   } catch (err) {
     console.warn('Stats failed', err) 
+  }
+}
+  async function generateRoadmap() {
+  if (messages.length < 2) {
+    alert('Have a longer conversation first!')
+    return
+  }
+
+  setShowRoadmap(true)
+  setLoadingRoadmap(true)
+  
+  try {
+    const res = await fetch('/api/roadmap', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        topic, 
+        history: messages,
+        gaps 
+      })
+    })
+    const data = await res.json()
+    setRoadmap(data.roadmap)
+  } catch (err) {
+    console.error('Roadmap failed')
+  } finally {
+    setLoadingRoadmap(false)
   }
 }
 
@@ -286,6 +316,22 @@ useEffect(() => {
         }}>
         📊 My Progress
       </button>
+
+      {messages.length >= 6 && (
+  <button
+    onClick={generateRoadmap}
+    style={{
+      fontSize: '11px',
+      color: '#fff',
+      background: '#3b82f6',
+      padding: '4px 12px',
+      borderRadius: '999px',
+      border: 'none',
+      cursor: 'pointer'
+    }}>
+    🗺️ My Roadmap
+  </button>
+)}
       
     <div style={{
         padding: '14px 24px',
@@ -705,6 +751,135 @@ useEffect(() => {
       zIndex: 199
     }}
   />
+)}
+{showRoadmap && (
+  <>
+    <div
+      onClick={() => setShowRoadmap(false)}
+      style={{
+        position: 'fixed',
+        top: 0, left: 0,
+        width: '100vw', height: '100vh',
+        background: 'rgba(0,0,0,0.8)',
+        zIndex: 300
+      }}
+    />
+    
+    <div style={{
+      position: 'fixed',
+      top: '50%', left: '50%',
+      transform: 'translate(-50%, -50%)',
+      width: '600px',
+      maxHeight: '85vh',
+      background: '#0a0a0a',
+      border: '1px solid #1f1f1f',
+      borderRadius: '12px',
+      padding: '28px',
+      overflowY: 'auto',
+      zIndex: 301,
+      boxShadow: '0 8px 32px rgba(0,0,0,0.8)'
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+        <div style={{ fontWeight: 700, fontSize: '18px' }}>Your Learning Roadmap</div>
+        <button
+          onClick={() => setShowRoadmap(false)}
+          style={{ background: 'transparent', border: 'none', color: '#555', cursor: 'pointer', fontSize: '20px' }}>
+          ×
+        </button>
+      </div>
+
+      {loadingRoadmap ? (
+        <div style={{ color: '#555', fontSize: '13px', textAlign: 'center', padding: '60px 20px' }}>
+          Generating your personalized roadmap...
+        </div>
+      ) : roadmap ? (
+        <>
+          <div style={{ 
+            background: 'linear-gradient(135deg, #3b82f6, #7F77DD)', 
+            padding: '20px', 
+            borderRadius: '8px', 
+            marginBottom: '24px',
+            color: '#fff'
+          }}>
+            <div style={{ fontSize: '12px', opacity: 0.9, marginBottom: '4px' }}>Current Level</div>
+            <div style={{ fontSize: '24px', fontWeight: 700, textTransform: 'capitalize' }}>
+              {roadmap.currentLevel}
+            </div>
+            <div style={{ fontSize: '12px', opacity: 0.8, marginTop: '8px' }}>
+              Estimated completion: {roadmap.estimatedCompletionWeeks} weeks
+            </div>
+          </div>
+
+          {roadmap.topicsCovered && roadmap.topicsCovered.length > 0 && (
+            <div style={{ marginBottom: '24px' }}>
+              <div style={{ fontSize: '13px', fontWeight: 600, marginBottom: '12px', color: '#22c55e' }}>
+                ✓ Topics You've Covered
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {roadmap.topicsCovered.map((t: string, i: number) => (
+                  <div key={i} style={{
+                    background: '#0f2a1f',
+                    border: '1px solid #22c55e33',
+                    color: '#22c55e',
+                    padding: '6px 12px',
+                    borderRadius: '6px',
+                    fontSize: '12px'
+                  }}>
+                    {t}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div style={{ marginBottom: '12px', fontSize: '13px', fontWeight: 600, color: '#fff' }}>
+            📍 What to Learn Next
+          </div>
+
+          {roadmap.nextTopics?.map((topic: any, i: number) => (
+            <div key={i} style={{
+              background: '#141414',
+              border: '1px solid #1f1f1f',
+              borderRadius: '8px',
+              padding: '16px',
+              marginBottom: '12px'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                <div style={{ fontSize: '15px', fontWeight: 600, color: '#fff' }}>
+                  {i + 1}. {topic.name}
+                </div>
+                <div style={{
+                  fontSize: '11px',
+                  background: topic.difficulty === 'beginner' ? '#22c55e22' : topic.difficulty === 'intermediate' ? '#f59e0b22' : '#ef444422',
+                  color: topic.difficulty === 'beginner' ? '#22c55e' : topic.difficulty === 'intermediate' ? '#f59e0b' : '#ef4444',
+                  padding: '3px 8px',
+                  borderRadius: '4px',
+                  textTransform: 'capitalize'
+                }}>
+                  {topic.difficulty}
+                </div>
+              </div>
+
+              <div style={{ fontSize: '12px', color: '#888', marginBottom: '8px', lineHeight: 1.6 }}>
+                {topic.why}
+              </div>
+
+              <div style={{ display: 'flex', gap: '16px', fontSize: '11px', color: '#555' }}>
+                <div>⏱️ {topic.estimatedHours}h</div>
+                {topic.prerequisites && topic.prerequisites.length > 0 && (
+                  <div>📚 Requires: {topic.prerequisites.join(', ')}</div>
+                )}
+              </div>
+            </div>
+          ))}
+        </>
+      ) : (
+        <div style={{ color: '#555', fontSize: '13px', textAlign: 'center', padding: '60px 20px' }}>
+          Failed to generate roadmap. Try again.
+        </div>
+      )}
+    </div>
+  </>
 )}
 
 
