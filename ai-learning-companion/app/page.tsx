@@ -20,6 +20,11 @@ export default function Home() {
   const [showRoadmap, setShowRoadmap] = useState(false)
   const [roadmap, setRoadmap] = useState<any>(null)
   const [loadingRoadmap, setLoadingRoadmap] = useState(false)
+  const [showQuiz, setShowQuiz] = useState(false)
+  const [quiz, setQuiz] = useState<any>(null)
+  const [quizAnswers, setQuizAnswers] = useState<{[key: number]: string}>({})
+  const [quizResults, setQuizResults] = useState<any>(null)
+  const [loadingQuiz, setLoadingQuiz] = useState(false) 
    
   const [sessions, setSessions] = useState<any[]>(() => {
      if (typeof window === 'undefined') return []
@@ -154,6 +159,83 @@ useEffect(() => {
     console.error('Roadmap failed')
   } finally {
     setLoadingRoadmap(false)
+  }
+}
+async function startQuiz() {
+  if (messages.length < 6) {
+    alert('Have a longer conversation first!')
+    return
+  }
+
+  setShowQuiz(true)
+  setLoadingQuiz(true)
+  setQuizResults(null)
+  setQuizAnswers({})
+
+  try {
+    const res = await fetch('/api/quiz', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'generate',
+        topic,
+        history: messages,
+        gaps
+      })
+    })
+    const data = await res.json()
+    setQuiz(data.quiz)
+  } catch (err) {
+    console.error('Quiz generation failed')
+  } finally {
+    setLoadingQuiz(false)
+  }
+}
+
+async function submitQuiz() {
+  if (Object.keys(quizAnswers).length < quiz.questions.length) {
+    alert('Please answer all questions first!')
+    return
+  }
+
+  setLoadingQuiz(true)
+
+  try {
+    const formattedAnswers = quiz.questions.map((q: any) => ({
+      questionId: q.id,
+      question: q.question,
+      studentAnswer: quizAnswers[q.id],
+      correctAnswer: q.correctAnswer
+    }))
+
+    const res = await fetch('/api/quiz', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'grade',
+        topic,
+        answers: formattedAnswers
+      })
+    })
+    const data = await res.json()
+    setQuizResults(data.results)
+
+    // Save quiz result to sessions
+    const quizSession = {
+      topic,
+      messageCount: 1,
+      timestamp: new Date().toISOString(),
+      type: 'quiz',
+      score: data.results.score
+    }
+    const updated = [...sessions, quizSession]
+    setSessions(updated)
+    localStorage.setItem('learningSessions', JSON.stringify(updated))
+
+  } catch (err) {
+    console.error('Quiz grading failed')
+  } finally {
+    setLoadingQuiz(false)
   }
 }
 
@@ -317,20 +399,35 @@ useEffect(() => {
         📊 My Progress
       </button>
 
-      {messages.length >= 6 && (
-  <button
-    onClick={generateRoadmap}
-    style={{
-      fontSize: '11px',
-      color: '#fff',
-      background: '#3b82f6',
-      padding: '4px 12px',
-      borderRadius: '999px',
-      border: 'none',
-      cursor: 'pointer'
-    }}>
-    🗺️ My Roadmap
-  </button>
+{messages.length >= 6 && (
+  <>
+    <button
+      onClick={generateRoadmap}
+      style={{
+        fontSize: '11px',
+        color: '#fff',
+        background: '#3b82f6',
+        padding: '4px 12px',
+        borderRadius: '999px',
+        border: 'none',
+        cursor: 'pointer'
+      }}>
+      🗺️ My Roadmap
+    </button>
+    <button
+      onClick={startQuiz}
+      style={{
+        fontSize: '11px',
+        color: '#fff',
+        background: '#8b5cf6',
+        padding: '4px 12px',
+        borderRadius: '999px',
+        border: 'none',
+        cursor: 'pointer'
+      }}>
+      📝 Take Quiz
+    </button>
+  </>
 )}
       
     <div style={{
@@ -878,6 +975,208 @@ useEffect(() => {
           Failed to generate roadmap. Try again.
         </div>
       )}
+    </div>
+  </>
+)}
+{showQuiz && (
+  <>
+    <div
+      onClick={() => setShowQuiz(false)}
+      style={{
+        position: 'fixed',
+        top: 0, left: 0,
+        width: '100vw', height: '100vh',
+        background: 'rgba(0,0,0,0.85)',
+        zIndex: 400
+      }}
+    />
+
+    <div style={{
+      position: 'fixed',
+      top: '50%', left: '50%',
+      transform: 'translate(-50%, -50%)',
+      width: '650px',
+      maxHeight: '90vh',
+      background: '#0a0a0a',
+      border: '1px solid #1f1f1f',
+      borderRadius: '12px',
+      padding: '32px',
+      overflowY: 'auto',
+      zIndex: 401
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+        <div>
+          <div style={{ fontWeight: 700, fontSize: '20px' }}>Knowledge Check</div>
+          <div style={{ fontSize: '12px', color: '#555', marginTop: '4px' }}>
+            {topic} • 5 questions
+          </div>
+        </div>
+        <button
+          onClick={() => setShowQuiz(false)}
+          style={{ background: 'transparent', border: 'none', color: '#555', cursor: 'pointer', fontSize: '22px' }}>
+          ×
+        </button>
+      </div>
+
+      {loadingQuiz ? (
+        <div style={{ color: '#555', fontSize: '13px', textAlign: 'center', padding: '80px 20px' }}>
+          {quizResults ? 'Grading your answers...' : 'Generating quiz questions...'}
+        </div>
+      ) : quizResults ? (
+        <>
+          <div style={{
+            background: quizResults.score >= 80 ? 'linear-gradient(135deg, #22c55e, #16a34a)' : quizResults.score >= 60 ? 'linear-gradient(135deg, #f59e0b, #d97706)' : 'linear-gradient(135deg, #ef4444, #dc2626)',
+            padding: '24px',
+            borderRadius: '8px',
+            marginBottom: '24px',
+            color: '#fff',
+            textAlign: 'center'
+          }}>
+            <div style={{ fontSize: '14px', opacity: 0.9, marginBottom: '8px' }}>Your Score</div>
+            <div style={{ fontSize: '48px', fontWeight: 700 }}>{quizResults.score}%</div>
+            <div style={{ fontSize: '13px', opacity: 0.9, marginTop: '8px' }}>
+              {quizResults.score >= 80 ? '🎉 Excellent!' : quizResults.score >= 60 ? '👍 Good job!' : '💪 Keep practicing!'}
+            </div>
+          </div>
+
+          <div style={{ fontSize: '13px', color: '#888', marginBottom: '20px', lineHeight: 1.6 }}>
+            {quizResults.feedback}
+          </div>
+
+          {quiz.questions.map((q: any, i: number) => {
+            const result = quizResults.results.find((r: any) => r.questionId === q.id)
+            return (
+              <div key={i} style={{
+                background: '#141414',
+                border: `1px solid ${result?.correct ? '#22c55e33' : '#ef444433'}`,
+                borderRadius: '8px',
+                padding: '16px',
+                marginBottom: '12px'
+              }}>
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                  <div style={{
+                    background: result?.correct ? '#22c55e22' : '#ef444422',
+                    color: result?.correct ? '#22c55e' : '#ef4444',
+                    padding: '2px 8px',
+                    borderRadius: '4px',
+                    fontSize: '11px',
+                    fontWeight: 600
+                  }}>
+                    {result?.correct ? '✓ Correct' : '✗ Incorrect'}
+                  </div>
+                </div>
+
+                <div style={{ fontSize: '14px', fontWeight: 500, marginBottom: '8px', color: '#fff' }}>
+                  {q.question}
+                </div>
+
+                <div style={{ fontSize: '12px', color: '#888', marginBottom: '4px' }}>
+                  Your answer: <span style={{ color: result?.correct ? '#22c55e' : '#ef4444' }}>{quizAnswers[q.id]}</span>
+                </div>
+
+                {!result?.correct && (
+                  <div style={{ fontSize: '12px', color: '#22c55e', marginBottom: '8px' }}>
+                    Correct answer: {q.correctAnswer}
+                  </div>
+                )}
+
+                <div style={{ fontSize: '12px', color: '#7F77DD', marginTop: '8px', lineHeight: 1.5 }}>
+                  💡 {result?.explanation}
+                </div>
+              </div>
+            )
+          })}
+
+          <button
+            onClick={() => { setShowQuiz(false); setQuizResults(null) }}
+            style={{
+              width: '100%',
+              background: '#7F77DD',
+              color: '#fff',
+              border: 'none',
+              padding: '12px',
+              borderRadius: '8px',
+              fontSize: '14px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              marginTop: '8px'
+            }}>
+            Done
+          </button>
+        </>
+      ) : quiz ? (
+        <>
+          {quiz.questions.map((q: any, i: number) => (
+            <div key={i} style={{
+              background: '#141414',
+              border: '1px solid #1f1f1f',
+              borderRadius: '8px',
+              padding: '20px',
+              marginBottom: '16px'
+            }}>
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                <div style={{
+                  background: q.difficulty === 'easy' ? '#22c55e22' : q.difficulty === 'medium' ? '#f59e0b22' : '#ef444422',
+                  color: q.difficulty === 'easy' ? '#22c55e' : q.difficulty === 'medium' ? '#f59e0b' : '#ef4444',
+                  padding: '3px 10px',
+                  borderRadius: '4px',
+                  fontSize: '11px',
+                  textTransform: 'capitalize'
+                }}>
+                  {q.difficulty}
+                </div>
+              </div>
+
+              <div style={{ fontSize: '15px', fontWeight: 500, marginBottom: '16px', color: '#fff', lineHeight: 1.5 }}>
+                {i + 1}. {q.question}
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {q.options.map((option: string, optIdx: number) => (
+                  <label key={optIdx} style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    padding: '12px',
+                    background: quizAnswers[q.id] === option ? '#7F77DD22' : '#0f0f0f',
+                    border: quizAnswers[q.id] === option ? '1px solid #7F77DD' : '1px solid #222',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}>
+                    <input
+                      type="radio"
+                      name={`question-${q.id}`}
+                      checked={quizAnswers[q.id] === option}
+                      onChange={() => setQuizAnswers({ ...quizAnswers, [q.id]: option })}
+                      style={{ marginRight: '10px' }}
+                    />
+                    <span style={{ fontSize: '13px', color: quizAnswers[q.id] === option ? '#fff' : '#888' }}>
+                      {option}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          ))}
+
+          <button
+            onClick={submitQuiz}
+            disabled={Object.keys(quizAnswers).length < quiz.questions.length}
+            style={{
+              width: '100%',
+              background: Object.keys(quizAnswers).length < quiz.questions.length ? '#333' : '#7F77DD',
+              color: Object.keys(quizAnswers).length < quiz.questions.length ? '#555' : '#fff',
+              border: 'none',
+              padding: '14px',
+              borderRadius: '8px',
+              fontSize: '15px',
+              fontWeight: 600,
+              cursor: Object.keys(quizAnswers).length < quiz.questions.length ? 'not-allowed' : 'pointer'
+            }}>
+            Submit Quiz ({Object.keys(quizAnswers).length}/{quiz.questions.length} answered)
+          </button>
+        </>
+      ) : null}
     </div>
   </>
 )}
