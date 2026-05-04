@@ -24,7 +24,14 @@ export default function Home() {
   const [quiz, setQuiz] = useState<any>(null)
   const [quizAnswers, setQuizAnswers] = useState<{[key: number]: string}>({})
   const [quizResults, setQuizResults] = useState<any>(null)
-  const [loadingQuiz, setLoadingQuiz] = useState(false) 
+  const [loadingQuiz, setLoadingQuiz] = useState(false)
+  const [showFlashcards, setShowFlashcards] = useState(false)
+  const [flashcards, setFlashcards] = useState<any[]>([])
+  const [currentCardIndex, setCurrentCardIndex] = useState(0)
+  const [isFlipped, setIsFlipped] = useState(false)
+  const [loadingFlashcards, setLoadingFlashcards] = useState(false)
+  const [shuffleMode, setShuffleMode] = useState(false)
+  const [reviewedCards, setReviewedCards] = useState<Set<number>>(new Set())
    
   const [sessions, setSessions] = useState<any[]>(() => {
      if (typeof window === 'undefined') return []
@@ -238,6 +245,63 @@ async function submitQuiz() {
     setLoadingQuiz(false)
   }
 }
+async function generateFlashcards() {
+  if (messages.length < 8) {
+    alert('Have a longer conversation first!')
+    return
+  }
+
+  setShowFlashcards(true)
+  setLoadingFlashcards(true)
+  setCurrentCardIndex(0)
+  setIsFlipped(false)
+
+  try {
+    const res = await fetch('/api/flashcards', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        topic,
+        history: messages
+      })
+    })
+    const data = await res.json()
+    setFlashcards(data.flashcards || [])
+  } catch (err) {
+    console.error('Flashcard generation failed')
+  } finally {
+    setLoadingFlashcards(false)
+  }
+}
+
+function nextCard() {
+  setReviewedCards(new Set([...reviewedCards, currentCardIndex]))
+  setIsFlipped(false)
+  
+  if (shuffleMode) {
+    const remaining = flashcards
+      .map((_, i) => i)
+      .filter(i => !reviewedCards.has(i) && i !== currentCardIndex)
+    if (remaining.length > 0) {
+      const randomIndex = remaining[Math.floor(Math.random() * remaining.length)]
+      setCurrentCardIndex(randomIndex)
+    } else {
+      setCurrentCardIndex((currentCardIndex + 1) % flashcards.length)
+    }
+  } else {
+    setCurrentCardIndex((currentCardIndex + 1) % flashcards.length)
+  }
+}
+
+function prevCard() {
+  setIsFlipped(false)
+  setCurrentCardIndex((currentCardIndex - 1 + flashcards.length) % flashcards.length)
+}
+
+function toggleShuffle() {
+  setShuffleMode(!shuffleMode)
+  setReviewedCards(new Set())
+}
 
   if (screen === 'landing') return (
     <main style={{
@@ -427,6 +491,21 @@ async function submitQuiz() {
       }}>
       📝 Take Quiz
     </button>
+    {messages.length >= 8 && (
+      <button
+        onClick={generateFlashcards}
+        style={{
+          fontSize: '11px',
+          color: '#fff',
+          background: '#ec4899',
+          padding: '4px 12px',
+          borderRadius: '999px',
+          border: 'none',
+          cursor: 'pointer'
+        }}>
+        🃏 Flashcards
+      </button>
+    )}
   </>
 )}
       
@@ -1177,6 +1256,204 @@ async function submitQuiz() {
           </button>
         </>
       ) : null}
+    </div>
+  </>
+)}
+{showFlashcards && (
+  <>
+    <div
+      onClick={() => setShowFlashcards(false)}
+      style={{
+        position: 'fixed',
+        top: 0, left: 0,
+        width: '100vw', height: '100vh',
+        background: 'rgba(0,0,0,0.9)',
+        zIndex: 500
+      }}
+    />
+
+    <div style={{
+      position: 'fixed',
+      top: '50%', left: '50%',
+      transform: 'translate(-50%, -50%)',
+      width: '600px',
+      background: '#0a0a0a',
+      border: '1px solid #1f1f1f',
+      borderRadius: '16px',
+      padding: '32px',
+      zIndex: 501
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+        <div>
+          <div style={{ fontWeight: 700, fontSize: '20px' }}>Study Flashcards</div>
+          <div style={{ fontSize: '12px', color: '#555', marginTop: '4px' }}>
+            {topic} • {flashcards.length} cards
+          </div>
+        </div>
+        <button
+          onClick={() => setShowFlashcards(false)}
+          style={{ background: 'transparent', border: 'none', color: '#555', cursor: 'pointer', fontSize: '22px' }}>
+          ×
+        </button>
+      </div>
+
+      {loadingFlashcards ? (
+        <div style={{ color: '#555', fontSize: '13px', textAlign: 'center', padding: '100px 20px' }}>
+          Generating flashcards from your conversation...
+        </div>
+      ) : flashcards.length > 0 ? (
+        <>
+          <div style={{ 
+            perspective: '1000px',
+            marginBottom: '24px'
+          }}>
+            <div
+              onClick={() => setIsFlipped(!isFlipped)}
+              style={{
+                position: 'relative',
+                width: '100%',
+                height: '280px',
+                transformStyle: 'preserve-3d',
+                transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0)',
+                transition: 'transform 0.6s',
+                cursor: 'pointer'
+              }}>
+              {/* Front of card */}
+              <div style={{
+                position: 'absolute',
+                width: '100%',
+                height: '100%',
+                backfaceVisibility: 'hidden',
+                background: 'linear-gradient(135deg, #ec4899, #8b5cf6)',
+                borderRadius: '12px',
+                padding: '32px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center'
+              }}>
+                <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.7)', marginBottom: '16px', textTransform: 'uppercase' }}>
+                  Question
+                </div>
+                <div style={{ fontSize: '18px', fontWeight: 600, color: '#fff', textAlign: 'center', lineHeight: 1.6 }}>
+                  {flashcards[currentCardIndex]?.question}
+                </div>
+                <div style={{ position: 'absolute', bottom: '16px', fontSize: '11px', color: 'rgba(255,255,255,0.5)' }}>
+                  Click to reveal answer
+                </div>
+              </div>
+
+              {/* Back of card */}
+              <div style={{
+                position: 'absolute',
+                width: '100%',
+                height: '100%',
+                backfaceVisibility: 'hidden',
+                background: 'linear-gradient(135deg, #7F77DD, #3b82f6)',
+                borderRadius: '12px',
+                padding: '32px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center',
+                transform: 'rotateY(180deg)'
+              }}>
+                <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.7)', marginBottom: '16px', textTransform: 'uppercase' }}>
+                  Answer
+                </div>
+                <div style={{ fontSize: '16px', color: '#fff', textAlign: 'center', lineHeight: 1.7 }}>
+                  {flashcards[currentCardIndex]?.answer}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <div style={{ fontSize: '13px', color: '#888' }}>
+              Card {currentCardIndex + 1} of {flashcards.length}
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <div style={{
+                fontSize: '11px',
+                background: flashcards[currentCardIndex]?.difficulty === 'easy' ? '#22c55e22' : flashcards[currentCardIndex]?.difficulty === 'medium' ? '#f59e0b22' : '#ef444422',
+                color: flashcards[currentCardIndex]?.difficulty === 'easy' ? '#22c55e' : flashcards[currentCardIndex]?.difficulty === 'medium' ? '#f59e0b' : '#ef4444',
+                padding: '4px 10px',
+                borderRadius: '4px',
+                textTransform: 'capitalize'
+              }}>
+                {flashcards[currentCardIndex]?.difficulty}
+              </div>
+              <div style={{
+                fontSize: '11px',
+                background: '#7F77DD22',
+                color: '#7F77DD',
+                padding: '4px 10px',
+                borderRadius: '4px',
+                textTransform: 'capitalize'
+              }}>
+                {flashcards[currentCardIndex]?.category}
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
+            <button
+              onClick={prevCard}
+              style={{
+                flex: 1,
+                background: '#1f1f1f',
+                color: '#fff',
+                border: '1px solid #333',
+                padding: '12px',
+                borderRadius: '8px',
+                fontSize: '14px',
+                fontWeight: 600,
+                cursor: 'pointer'
+              }}>
+              ← Previous
+            </button>
+            <button
+              onClick={nextCard}
+              style={{
+                flex: 1,
+                background: '#7F77DD',
+                color: '#fff',
+                border: 'none',
+                padding: '12px',
+                borderRadius: '8px',
+                fontSize: '14px',
+                fontWeight: 600,
+                cursor: 'pointer'
+              }}>
+              Next →
+            </button>
+          </div>
+
+          <button
+            onClick={toggleShuffle}
+            style={{
+              width: '100%',
+              background: shuffleMode ? '#ec489922' : 'transparent',
+              color: shuffleMode ? '#ec4899' : '#888',
+              border: '1px solid ' + (shuffleMode ? '#ec4899' : '#333'),
+              padding: '10px',
+              borderRadius: '8px',
+              fontSize: '13px',
+              fontWeight: 600,
+              cursor: 'pointer'
+            }}>
+            🔀 Shuffle Mode {shuffleMode ? 'ON' : 'OFF'}
+          </button>
+
+          <div style={{ marginTop: '16px', fontSize: '12px', color: '#555', textAlign: 'center' }}>
+            Reviewed: {reviewedCards.size} / {flashcards.length} cards
+          </div>
+        </>
+      ) : (
+        <div style={{ color: '#555', fontSize: '13px', textAlign: 'center', padding: '60px 20px' }}>
+          Failed to generate flashcards. Try again.
+        </div>
+      )}
     </div>
   </>
 )}
