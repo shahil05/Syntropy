@@ -32,6 +32,15 @@ export default function Home() {
   const [loadingFlashcards, setLoadingFlashcards] = useState(false)
   const [shuffleMode, setShuffleMode] = useState(false)
   const [reviewedCards, setReviewedCards] = useState<Set<number>>(new Set())
+  const [timerRunning, setTimerRunning] = useState(false)
+  const [timerSeconds, setTimerSeconds] = useState(25 * 60) // 25 minutes in seconds
+  const [timerMode, setTimerMode] = useState<'focus' | 'break'>('focus')
+  const [showTimer, setShowTimer] = useState(false)
+  const [totalStudyTime, setTotalStudyTime] = useState(() => {
+  if (typeof window === 'undefined') return 0
+  const stored = localStorage.getItem('totalStudyTime')
+  return stored ? parseInt(stored) : 0
+})
    
   const [sessions, setSessions] = useState<any[]>(() => {
      if (typeof window === 'undefined') return []
@@ -46,6 +55,9 @@ export default function Home() {
     localStorage.setItem('userId', newId)
     return newId
   })
+  const [customFocusMinutes, setCustomFocusMinutes] = useState(25)
+  const [customBreakMinutes, setCustomBreakMinutes] = useState(5)
+  const [showTimerSettings, setShowTimerSettings] = useState(false)
 // app/page.tsx 
 
 useEffect(() => {
@@ -69,6 +81,50 @@ useEffect(() => {
   // ONLY messages.length and topic should be here.
   // REMOVE 'sessions' from this array!
 }, [messages.length, topic]);
+useEffect(() => {
+  let interval: NodeJS.Timeout | null = null
+
+  if (timerRunning && timerSeconds > 0) {
+    interval = setInterval(() => {
+      setTimerSeconds(prev => {
+        if (prev <= 1) {
+          // Timer finished
+          setTimerRunning(false)
+          
+          // Play sound (optional - browser's beep)
+          const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUKXh8LhjHQU2jdTx0H4yBSh+zPLaizsKEly28OehUBELTKXh8bllHgU1i9Dx0n8zBSl/zPDajDsKEVuz6+mnUhEMTKPg8bllHwU0iM/x1YA1BSiByvDbjTwKD1+16OeoUxIMTKPf8bllHwU0iM/x1YA1BSiByvDbjTwKEFux6OenUxIMTKLe8bllHwU0iM/x1YA1BSiByvDbjTwKEFux6OenUxIMTKLe8bllHwU0iM/x1YA1BSiByvDbjTwKEFux6OenUxIMTKLe8bllHwU0iM/x1YA1BSiByvDbjTwKEFux6OenUxIMTKLe8bllHwU0iM/x1YA1BSiByvDbjTwKEFux6OenUxIMTKLe8bllHwU0iM/x1YA1BSiByvDbjTwKEFux6OenUxIMTKLe8bllHwU0iM/x1YA1BSiByvDbjTwKEFux6OenUxIMTKLe8bllHwU0iM/x1YA1BSiByvDbjTwKEFux6OenUxIMTKLe8bllHwU0iM/x1YA1BSiByvDbjTwKEFux6OenUxIMTKLe8bllHwU0iM/x1YA1BSiByvDbjTwK')
+          audio.play().catch(() => {}) // Ignore if browser blocks
+          
+          // Switch mode
+          // Inside the useEffect, replace the mode switching section:
+
+if (timerMode === 'focus') {
+  // Save study time
+  const sessionTime = customFocusMinutes * 60
+  const newTotal = totalStudyTime + sessionTime
+  setTotalStudyTime(newTotal)
+  localStorage.setItem('totalStudyTime', newTotal.toString())
+  
+  alert(`🎉 ${customFocusMinutes}-minute focus session complete! Time for a ${customBreakMinutes}-minute break.`)
+  setTimerMode('break')
+  setTimerSeconds(customBreakMinutes * 60)
+} else {
+  alert(`✅ Break over! Ready for another ${customFocusMinutes}-minute focus session?`)
+  setTimerMode('focus')
+  setTimerSeconds(customFocusMinutes * 60)
+}
+          
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+  }
+
+  return () => {
+    if (interval) clearInterval(interval)
+  }
+}, [timerRunning, timerSeconds, timerMode, totalStudyTime])
 
   async function sendMessage() {
     if (!input.trim()) return
@@ -302,6 +358,24 @@ function toggleShuffle() {
   setShuffleMode(!shuffleMode)
   setReviewedCards(new Set())
 }
+function startTimer() {
+  setTimerRunning(true)
+}
+
+function pauseTimer() {
+  setTimerRunning(false)
+}
+
+function resetTimer() {
+  setTimerRunning(false)
+  setTimerSeconds(timerMode === 'focus' ? customFocusMinutes * 60 : customBreakMinutes * 60)
+}
+
+function formatTime(seconds: number) {
+  const mins = Math.floor(seconds / 60)
+  const secs = seconds % 60
+  return `${mins}:${secs.toString().padStart(2, '0')}`
+}
 
   if (screen === 'landing') return (
     <main style={{
@@ -493,6 +567,7 @@ function toggleShuffle() {
     </button>
     {messages.length >= 8 && (
       <button
+
         onClick={generateFlashcards}
         style={{
           fontSize: '11px',
@@ -505,7 +580,21 @@ function toggleShuffle() {
         }}>
         🃏 Flashcards
       </button>
+      
     )}
+    <button
+  onClick={() => setShowTimer(!showTimer)}
+  style={{
+    fontSize: '11px',
+    color: showTimer ? '#fff' : '#888',
+    background: showTimer ? '#10b981' : 'transparent',
+    padding: '4px 12px',
+    borderRadius: '999px',
+    border: showTimer ? 'none' : '1px solid #333',
+    cursor: 'pointer'
+  }}>
+  ⏱️ {showTimer ? 'Timer ON' : 'Study Timer'}
+</button>
   </>
 )}
       
@@ -583,6 +672,243 @@ function toggleShuffle() {
         width: '100%',
         margin: '0 auto'
       }}>
+  {showTimer && (
+    <div style={{
+    position: 'sticky',
+    top: 0,
+    background: timerMode === 'focus' ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #f59e0b, #d97706)',
+    padding: '16px 20px',
+    borderRadius: '12px',
+    marginBottom: '16px',
+    zIndex: 100,
+    boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+  }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div>
+        <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.8)', marginBottom: '4px', textTransform: 'uppercase' }}>
+          {timerMode === 'focus' ? '🎯 Focus Session' : '☕ Break Time'}
+        </div>
+        <div style={{ fontSize: '32px', fontWeight: 700, color: '#fff', fontFamily: 'monospace' }}>
+          {formatTime(timerSeconds)}
+        </div>
+        <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.7)', marginTop: '4px' }}>
+          Total study time today: {Math.floor(totalStudyTime / 60)} minutes
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+        <button
+          onClick={() => setShowTimerSettings(!showTimerSettings)}
+          style={{
+            background: 'rgba(255,255,255,0.15)',
+            backdropFilter: 'blur(10px)',
+            color: '#fff',
+            border: '1px solid rgba(255,255,255,0.25)',
+            padding: '8px 12px',
+            borderRadius: '8px',
+            fontSize: '16px',
+            cursor: 'pointer'
+          }}>
+          ⚙️
+        </button>
+
+        {!timerRunning ? (
+          <button
+            onClick={startTimer}
+            style={{
+              background: 'rgba(255,255,255,0.2)',
+              backdropFilter: 'blur(10px)',
+              color: '#fff',
+              border: '1px solid rgba(255,255,255,0.3)',
+              padding: '8px 16px',
+              borderRadius: '8px',
+              fontSize: '13px',
+              fontWeight: 600,
+              cursor: 'pointer'
+            }}>
+            ▶ Start
+          </button>
+        ) : (
+          <button
+            onClick={pauseTimer}
+            style={{
+              background: 'rgba(255,255,255,0.2)',
+              backdropFilter: 'blur(10px)',
+              color: '#fff',
+              border: '1px solid rgba(255,255,255,0.3)',
+              padding: '8px 16px',
+              borderRadius: '8px',
+              fontSize: '13px',
+              fontWeight: 600,
+              cursor: 'pointer'
+            }}>
+            ⏸ Pause
+          </button>
+        )}
+        
+        <button
+          onClick={resetTimer}
+          style={{
+            background: 'rgba(255,255,255,0.15)',
+            backdropFilter: 'blur(10px)',
+            color: '#fff',
+            border: '1px solid rgba(255,255,255,0.25)',
+            padding: '8px 16px',
+            borderRadius: '8px',
+            fontSize: '13px',
+            fontWeight: 600,
+            cursor: 'pointer'
+          }}>
+          ↻ Reset
+        </button>
+      </div>
+    </div>
+
+    {/* Settings dropdown */}
+    {showTimerSettings && (
+      <div style={{
+        marginTop: '16px',
+        padding: '16px',
+        background: 'rgba(0,0,0,0.3)',
+        borderRadius: '8px',
+        border: '1px solid rgba(255,255,255,0.2)'
+      }}>
+        <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.9)', marginBottom: '12px', fontWeight: 600 }}>
+          Timer Settings
+        </div>
+
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ fontSize: '11px', color: 'rgba(255,255,255,0.7)', display: 'block', marginBottom: '6px' }}>
+            Focus Duration (minutes)
+          </label>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <button
+              onClick={() => setCustomFocusMinutes(Math.max(5, customFocusMinutes - 5))}
+              style={{
+                background: 'rgba(255,255,255,0.15)',
+                color: '#fff',
+                border: '1px solid rgba(255,255,255,0.25)',
+                padding: '6px 12px',
+                borderRadius: '6px',
+                fontSize: '14px',
+                cursor: 'pointer'
+              }}>
+              −
+            </button>
+            <input
+              type="number"
+              value={customFocusMinutes}
+              onChange={(e) => setCustomFocusMinutes(Math.max(1, parseInt(e.target.value) || 1))}
+              style={{
+                width: '60px',
+                background: 'rgba(255,255,255,0.15)',
+                color: '#fff',
+                border: '1px solid rgba(255,255,255,0.25)',
+                padding: '6px',
+                borderRadius: '6px',
+                fontSize: '14px',
+                textAlign: 'center'
+              }}
+            />
+            <button
+              onClick={() => setCustomFocusMinutes(Math.min(120, customFocusMinutes + 5))}
+              style={{
+                background: 'rgba(255,255,255,0.15)',
+                color: '#fff',
+                border: '1px solid rgba(255,255,255,0.25)',
+                padding: '6px 12px',
+                borderRadius: '6px',
+                fontSize: '14px',
+                cursor: 'pointer'
+              }}>
+              +
+            </button>
+          </div>
+        </div>
+
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ fontSize: '11px', color: 'rgba(255,255,255,0.7)', display: 'block', marginBottom: '6px' }}>
+            Break Duration (minutes)
+          </label>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <button
+              onClick={() => setCustomBreakMinutes(Math.max(1, customBreakMinutes - 1))}
+              style={{
+                background: 'rgba(255,255,255,0.15)',
+                color: '#fff',
+                border: '1px solid rgba(255,255,255,0.25)',
+                padding: '6px 12px',
+                borderRadius: '6px',
+                fontSize: '14px',
+                cursor: 'pointer'
+              }}>
+              −
+            </button>
+            <input
+              type="number"
+              value={customBreakMinutes}
+              onChange={(e) => setCustomBreakMinutes(Math.max(1, parseInt(e.target.value) || 1))}
+              style={{
+                width: '60px',
+                background: 'rgba(255,255,255,0.15)',
+                color: '#fff',
+                border: '1px solid rgba(255,255,255,0.25)',
+                padding: '6px',
+                borderRadius: '6px',
+                fontSize: '14px',
+                textAlign: 'center'
+              }}
+            />
+            <button
+              onClick={() => setCustomBreakMinutes(Math.min(30, customBreakMinutes + 1))}
+              style={{
+                background: 'rgba(255,255,255,0.15)',
+                color: '#fff',
+                border: '1px solid rgba(255,255,255,0.25)',
+                padding: '6px 12px',
+                borderRadius: '6px',
+                fontSize: '14px',
+                cursor: 'pointer'
+              }}>
+              +
+            </button>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button
+            onClick={() => { setCustomFocusMinutes(25); setCustomBreakMinutes(5); }}
+            style={{
+              flex: 1,
+              background: 'rgba(255,255,255,0.1)',
+              color: 'rgba(255,255,255,0.7)',
+              border: '1px solid rgba(255,255,255,0.2)',
+              padding: '6px',
+              borderRadius: '6px',
+              fontSize: '11px',
+              cursor: 'pointer'
+            }}>
+            Classic (25/5)
+          </button>
+          <button
+            onClick={() => { setCustomFocusMinutes(50); setCustomBreakMinutes(10); }}
+            style={{
+              flex: 1,
+              background: 'rgba(255,255,255,0.1)',
+              color: 'rgba(255,255,255,0.7)',
+              border: '1px solid rgba(255,255,255,0.2)',
+              padding: '6px',
+              borderRadius: '6px',
+              fontSize: '11px',
+              cursor: 'pointer'
+            }}>
+            Long (50/10)
+          </button>
+        </div>
+      </div>
+    )}
+  </div>
+)}
 
         {messages.length === 0 && (
           <div style={{ textAlign: 'center', marginTop: '80px' }}>
