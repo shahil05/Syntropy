@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import ReactMarkdown from 'react-markdown'
-
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+// Change 'cjs' to 'esm' here:
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 type Message = { role: 'user' | 'ai', content: string }
 
 export default function Home() {
@@ -1084,15 +1086,90 @@ function exportRoadmapAsText() {
                     h1: ({children}) => <h1 style={{ fontSize: '18px', fontWeight: 700, margin: '16px 0 8px 0' }}>{children}</h1>,
                     h2: ({children}) => <h2 style={{ fontSize: '16px', fontWeight: 600, margin: '14px 0 8px 0', color: '#AFA9EC' }}>{children}</h2>,
                     h3: ({children}) => <h3 style={{ fontSize: '14px', fontWeight: 600, margin: '12px 0 6px 0', color: '#AFA9EC' }}>{children}</h3>,
-                    code: ({children}) => (
-                      <code style={{
-                        background: '#0f0f0f',
-                        padding: '2px 6px',
-                        borderRadius: '4px',
-                        fontSize: '13px',
-                        color: '#7F77DD'
-                      }}>{children}</code>
-                    ),
+                    code: ({node, inline, className, children, ...props}: any) => {
+  const match = /language-(\w+)/.exec(className || '')
+  const language = match ? match[1] : ''
+  
+  return !inline && match ? (
+    <div style={{ position: 'relative', marginTop: '12px', marginBottom: '12px' }}>
+      {/* Language label */}
+      <div style={{
+        position: 'absolute',
+        top: '8px',
+        right: '8px',
+        background: '#1a1a1a',
+        color: '#7F77DD',
+        padding: '2px 8px',
+        borderRadius: '4px',
+        fontSize: '10px',
+        textTransform: 'uppercase',
+        fontWeight: 600,
+        zIndex: 1
+      }}>
+        {language}
+      </div>
+      
+      <SyntaxHighlighter
+        style={vscDarkPlus}
+        language={language}
+        PreTag="div"
+        customStyle={{
+          margin: 0,
+          borderRadius: '8px',
+          fontSize: '13px',
+          padding: '16px',
+          background: '#1a1a1a'
+        }}
+        {...props}
+      >
+        {String(children).replace(/\n$/, '')}
+      </SyntaxHighlighter>
+      
+      {/* Copy button */}
+      <button
+        onClick={() => {
+          navigator.clipboard.writeText(String(children).replace(/\n$/, ''))
+          alert('Code copied!')
+        }}
+        style={{
+          position: 'absolute',
+          bottom: '8px',
+          right: '8px',
+          background: '#2a2a2a',
+          color: '#888',
+          border: '1px solid #333',
+          padding: '4px 10px',
+          borderRadius: '6px',
+          fontSize: '11px',
+          cursor: 'pointer',
+          fontWeight: 500
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = '#7F77DD'
+          e.currentTarget.style.color = '#fff'
+          e.currentTarget.style.borderColor = '#7F77DD'
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = '#2a2a2a'
+          e.currentTarget.style.color = '#888'
+          e.currentTarget.style.borderColor = '#333'
+        }}
+      >
+        Copy
+      </button>
+    </div>
+  ) : (
+    <code style={{
+      background: '#0f0f0f',
+      padding: '2px 6px',
+      borderRadius: '4px',
+      fontSize: '13px',
+      color: '#7F77DD'
+    }} {...props}>
+      {children}
+    </code>
+  )
+},
                   }}
                 >
                   {msg.content}
