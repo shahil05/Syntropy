@@ -4,7 +4,8 @@
 
 ![Next.js](https://img.shields.io/badge/Next.js-000000?style=flat-square&logo=nextdotjs&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)
-![Claude API](https://img.shields.io/badge/Claude%20API-D97757?style=flat-square&logo=anthropic&logoColor=white)
+![Groq API](https://img.shields.io/badge/Groq%20API-F55036?style=flat-square&logo=groq&logoColor=white)
+![LLaMA](https://img.shields.io/badge/LLaMA%203.3%2070B-6B48FF?style=flat-square&logo=meta&logoColor=white)
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)
 
 ---
@@ -19,7 +20,7 @@ The AI Learning Companion builds a persistent model of *your* knowledge — what
 
 ## 🚀 Features
 
-- **Adaptive Chat** — Conversational AI tutor powered by Claude. Explains concepts, answers questions, and adjusts depth based on your level.
+- **Adaptive Chat** — Conversational AI tutor powered by LLaMA 3.3 70B via Groq. Explains concepts, answers questions, and adjusts depth based on your level.
 - **Quiz Generation** — Enter any topic and get an AI-generated quiz. Your answers are graded and fed back into your knowledge profile.
 - **Weak Spot Detection** — The gaps engine tracks where you consistently struggle and surfaces those areas in future sessions.
 - **Personalized Roadmap** — Dynamically generated learning path based on your goals and current weak spots. Updates as you improve.
@@ -44,7 +45,7 @@ The AI Learning Companion builds a persistent model of *your* knowledge — what
 |-------|-----------|
 | Framework | Next.js 14 (App Router) |
 | Language | TypeScript |
-| AI | Anthropic Claude API |
+| AI Model | LLaMA 3.3 70B Versatile (via Groq API) |
 | Memory | Vector DB (long-term user knowledge) |
 | Styling | Tailwind CSS |
 | Runtime | Node.js |
@@ -57,7 +58,7 @@ The AI Learning Companion builds a persistent model of *your* knowledge — what
 ai-learning-companion/
 ├── app/
 │   ├── api/
-│   │   ├── chat/          # Claude chat endpoint
+│   │   ├── chat/          # Groq chat endpoint
 │   │   ├── flashcards/    # Flashcard generation & export
 │   │   ├── gaps/          # Weak spot detection engine
 │   │   ├── memory/        # Vector DB read/write for user knowledge
@@ -81,7 +82,7 @@ ai-learning-companion/
 User Message
      │
      ▼
-Claude API ──► Response
+Groq API (LLaMA 3.3 70B) ──► Response
      │
      ▼
 Memory Engine (Vector DB)
@@ -107,7 +108,7 @@ Memory Engine (Vector DB)
 ### Prerequisites
 
 - Node.js ≥ 18
-- Anthropic API key → [console.anthropic.com](https://console.anthropic.com)
+- Groq API key → [console.groq.com](https://console.groq.com)
 
 ### Installation
 
@@ -134,7 +135,7 @@ Open [http://localhost:3000](http://localhost:3000)
 ## 🔧 Environment Variables
 
 ```env
-ANTHROPIC_API_KEY=your_claude_api_key
+GROQ_API_KEY=your_groq_api_key
 VECTOR_DB_API_KEY=your_vector_db_key
 ```
 
@@ -142,7 +143,7 @@ VECTOR_DB_API_KEY=your_vector_db_key
 
 ## 🗺️ Roadmap
 
-- [x] Adaptive chat with Claude API
+- [x] Adaptive chat with LLaMA 3.3 70B via Groq
 - [x] AI-powered quiz generation & grading
 - [x] Weak spot / knowledge gap detection
 - [x] Personalized learning roadmap
@@ -162,3 +163,5 @@ VECTOR_DB_API_KEY=your_vector_db_key
 MIT © [Shahil](https://github.com/shahil05)
 
 ---
+
+<p align="center">Built from scratch in 30 days with zero prior dev experience — using AI as a coding partner.</p>
