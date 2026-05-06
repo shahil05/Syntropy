@@ -376,6 +376,121 @@ function formatTime(seconds: number) {
   const secs = seconds % 60
   return `${mins}:${secs.toString().padStart(2, '0')}`
 }
+function exportConversationAsPDF() {
+  if (messages.length === 0) {
+    alert('No conversation to export!')
+    return
+  }
+
+  // Dynamic import to avoid SSR issues
+  import('jspdf').then(({ jsPDF }) => {
+    const doc = new jsPDF()
+    
+    // Title
+    doc.setFontSize(18)
+    doc.setFont('helvetica', 'bold')
+    doc.text(`Learning: ${topic}`, 20, 20)
+    
+    // Metadata
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'normal')
+    doc.text(`Exported: ${new Date().toLocaleDateString()}`, 20, 30)
+    doc.text(`Messages: ${messages.length}`, 20, 35)
+    
+    // Messages
+    let y = 50
+    doc.setFontSize(11)
+    
+    messages.forEach((msg, i) => {
+      // Check if we need a new page
+      if (y > 270) {
+        doc.addPage()
+        y = 20
+      }
+      
+      // Speaker label
+      doc.setFont('helvetica', 'bold')
+      doc.text(msg.role === 'user' ? 'You:' : 'Alex:', 20, y)
+      
+      // Message content (wrapped)
+      doc.setFont('helvetica', 'normal')
+      const lines = doc.splitTextToSize(msg.content, 170)
+      doc.text(lines, 20, y + 5)
+      
+      y += (lines.length * 5) + 10
+    })
+    
+    doc.save(`${topic.replace(/\s+/g, '-')}-conversation.pdf`)
+  })
+}
+
+function exportFlashcardsAsJSON() {
+  if (flashcards.length === 0) {
+    alert('No flashcards to export! Generate them first.')
+    return
+  }
+
+  const exportData = {
+    topic,
+    exportedAt: new Date().toISOString(),
+    totalCards: flashcards.length,
+    flashcards: flashcards.map(card => ({
+      question: card.question,
+      answer: card.answer,
+      difficulty: card.difficulty,
+      category: card.category
+    }))
+  }
+
+  const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `${topic.replace(/\s+/g, '-')}-flashcards.json`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+function exportRoadmapAsText() {
+  if (!roadmap) {
+    alert('No roadmap to export! Generate it first.')
+    return
+  }
+
+  let text = `LEARNING ROADMAP: ${topic}\n`
+  text += `Generated: ${new Date().toLocaleDateString()}\n`
+  text += `\n${'='.repeat(50)}\n\n`
+  
+  text += `CURRENT LEVEL: ${roadmap.currentLevel.toUpperCase()}\n`
+  text += `Estimated completion: ${roadmap.estimatedCompletionWeeks} weeks\n\n`
+  
+  if (roadmap.topicsCovered?.length > 0) {
+    text += `TOPICS COVERED:\n`
+    roadmap.topicsCovered.forEach((t: string) => {
+      text += `  ✓ ${t}\n`
+    })
+    text += `\n`
+  }
+  
+  text += `WHAT TO LEARN NEXT:\n\n`
+  roadmap.nextTopics?.forEach((topic: any, i: number) => {
+    text += `${i + 1}. ${topic.name} [${topic.difficulty}]\n`
+    text += `   ${topic.why}\n`
+    text += `   Time: ${topic.estimatedHours}h`
+    if (topic.prerequisites?.length > 0) {
+      text += ` | Prerequisites: ${topic.prerequisites.join(', ')}`
+    }
+    text += `\n\n`
+  })
+
+  const blob = new Blob([text], { type: 'text/plain' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `${topic.replace(/\s+/g, '-')}-roadmap.txt`
+  a.click()
+  URL.revokeObjectURL(url)
+}
 
   if (screen === 'landing') return (
     <main style={{
@@ -1233,6 +1348,23 @@ function formatTime(seconds: number) {
             ))
           )}
         </div>
+        {/* ADD THIS EXPORT BUTTON HERE ⬇️ */}
+        <button
+          onClick={exportConversationAsPDF}
+          style={{
+            width: '100%',
+            background: 'transparent',
+            color: '#7F77DD',
+            border: '1px solid #7F77DD',
+            padding: '12px',
+            borderRadius: '8px',
+            fontSize: '13px',
+            fontWeight: 600,
+            cursor: 'pointer',
+            marginTop: '20px'
+          }}>
+          📥 Export Conversation as PDF
+        </button>
       </>
     ) : (
       <div style={{ color: '#555', fontSize: '13px', textAlign: 'center', marginTop: '60px' }}>
@@ -1374,7 +1506,28 @@ function formatTime(seconds: number) {
               </div>
             </div>
           ))}
+          
+
+          {/* ADD THIS EXPORT BUTTON HERE ⬇️ */}
+          <button
+            onClick={exportRoadmapAsText}
+            style={{
+              width: '100%',
+              background: 'transparent',
+              color: '#3b82f6',
+              border: '1px solid #3b82f6',
+              padding: '12px',
+              borderRadius: '8px',
+              fontSize: '13px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              marginTop: '20px'
+            }}>
+            📥 Export Roadmap as Text
+          </button>
+
         </>
+      
       ) : (
         <div style={{ color: '#555', fontSize: '13px', textAlign: 'center', padding: '60px 20px' }}>
           Failed to generate roadmap. Try again.
@@ -1771,9 +1924,29 @@ function formatTime(seconds: number) {
             🔀 Shuffle Mode {shuffleMode ? 'ON' : 'OFF'}
           </button>
 
+          
           <div style={{ marginTop: '16px', fontSize: '12px', color: '#555', textAlign: 'center' }}>
             Reviewed: {reviewedCards.size} / {flashcards.length} cards
           </div>
+
+          {/* ADD THIS EXPORT BUTTON HERE ⬇️ */}
+          <button
+            onClick={exportFlashcardsAsJSON}
+            style={{
+              width: '100%',
+              background: 'transparent',
+              color: '#ec4899',
+              border: '1px solid #ec4899',
+              padding: '10px',
+              borderRadius: '8px',
+              fontSize: '13px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              marginTop: '12px'
+            }}>
+            📥 Export Flashcards as JSON
+          </button>
+
         </>
       ) : (
         <div style={{ color: '#555', fontSize: '13px', textAlign: 'center', padding: '60px 20px' }}>
