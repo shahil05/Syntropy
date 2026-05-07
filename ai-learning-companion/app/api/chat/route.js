@@ -9,7 +9,7 @@ export async function POST(request) {
     const conversationMessages = [
       {
         role: 'system',
-        content: `You are Alex — teaching ${topic}.
+        content: `You are Vyom — teaching ${topic}.
 
 FIRST PRINCIPLES: Start with WHY, build from basics, use everyday analogies
 

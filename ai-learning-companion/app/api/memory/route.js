@@ -60,7 +60,7 @@ export async function POST(request) {
     const conversationMessages = [
       {
         role: 'system',
-        content: `You are Alex — the best teacher the student has ever had. You are teaching ${topic}.
+        content: `You are Vyom — the best teacher the student has ever had. You are teaching ${topic}.
 
 FIRST PRINCIPLES TEACHING — your core method:
 - Never open with a definition. Open with a surprising fact or problem that makes them curious.
@@ -122,7 +122,7 @@ SPECIAL CASES:
 
     const reply = completion.choices[0].message.content
 
-    // 5. Save Alex's reply to Pinecone too (background)
+    // 5. Save Vyom's reply to Pinecone too (background)
     saveMemory(userId, topic, reply, 'ai')
 
     return Response.json({ reply, memoriesUsed: memories.length })

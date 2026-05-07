@@ -60,6 +60,11 @@ export default function Home() {
   const [customFocusMinutes, setCustomFocusMinutes] = useState(25)
   const [customBreakMinutes, setCustomBreakMinutes] = useState(5)
   const [showTimerSettings, setShowTimerSettings] = useState(false)
+
+  // Add this helper function
+function isMobile() {
+  return typeof window !== 'undefined' && window.innerWidth < 768
+}
 // app/page.tsx 
 
 useEffect(() => {
@@ -412,7 +417,7 @@ function exportConversationAsPDF() {
       
       // Speaker label
       doc.setFont('helvetica', 'bold')
-      doc.text(msg.role === 'user' ? 'You:' : 'Alex:', 20, y)
+      doc.text(msg.role === 'user' ? 'You:' : 'Vyom:', 20, y)
       
       // Message content (wrapped)
       doc.setFont('helvetica', 'normal')
@@ -519,7 +524,7 @@ function exportRoadmapAsText() {
       </div>
 
       <h1 style={{
-        fontSize: '48px',
+        fontSize: isMobile() ? '32px' : '48px',
         fontWeight: 700,
         textAlign: 'center',
         marginBottom: '20px',
@@ -531,12 +536,14 @@ function exportRoadmapAsText() {
       </h1>
 
       <p style={{
-        fontSize: '18px',
+        fontSize: isMobile() ? '16px' : '18px',
         color: '#888',
         textAlign: 'center',
         maxWidth: '500px',
         lineHeight: 1.7,
-        marginBottom: '36px'
+        marginBottom: '36px',
+        padding: isMobile() ? '0 20px' : '0'
+
       }}>
         Your personal AI tutor that teaches from first principles, adapts to your pace, and never moves on until you actually get it.
       </p>
@@ -574,7 +581,7 @@ function exportRoadmapAsText() {
         What do you want to learn?
       </h1>
       <p style={{ color: '#555', marginBottom: '28px', fontSize: '15px' }}>
-        Alex will teach it from scratch using first principles.
+        Vyom will teach it from scratch using first principles.
       </p>
 
       <input
@@ -608,7 +615,7 @@ function exportRoadmapAsText() {
           cursor: 'pointer',
           fontWeight: 500
         }}>
-        Meet Alex →
+        Meet Vyom →
       </button>
     </main>
   )
@@ -737,11 +744,11 @@ function exportRoadmapAsText() {
           background: '#7F77DD', display: 'flex', alignItems: 'center',
           justifyContent: 'center', fontWeight: 700, fontSize: '14px', flexShrink: 0
         }}>
-          A
+          V
         </div>
 
         <div>
-          <div style={{ fontWeight: 600, fontSize: '14px' }}>Alex — AI Tutor</div>
+          <div style={{ fontWeight: 600, fontSize: '14px' }}>Vyom</div>
           <div style={{ fontSize: '11px', color: '#7F77DD' }}>Teaching: {topic}</div>
         </div>
 
@@ -794,7 +801,7 @@ function exportRoadmapAsText() {
     position: 'sticky',
     top: 0,
     background: timerMode === 'focus' ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #f59e0b, #d97706)',
-    padding: '16px 20px',
+    padding: isMobile() ? '12px 16px' : '16px 20px',
     borderRadius: '12px',
     marginBottom: '16px',
     zIndex: 100,
@@ -1030,7 +1037,7 @@ function exportRoadmapAsText() {
         {messages.length === 0 && (
           <div style={{ textAlign: 'center', marginTop: '80px' }}>
             <div style={{ fontSize: '40px', marginBottom: '16px' }}>👋</div>
-            <div style={{ fontSize: '17px', fontWeight: 500, marginBottom: '8px' }}>Hey! I'm Alex.</div>
+            <div style={{ fontSize: '17px', fontWeight: 500, marginBottom: '8px' }}>Hey! I'm Vyom.</div>
             <div style={{ fontSize: '14px', color: '#555', maxWidth: '360px', margin: '0 auto', lineHeight: 1.6 }}>
               I'll teach you <span style={{ color: '#7F77DD' }}>{topic}</span> from the ground up.<br />
               Type anything to get started — even just "hi".
@@ -1052,7 +1059,7 @@ function exportRoadmapAsText() {
                 justifyContent: 'center', fontWeight: 700, fontSize: '12px',
                 flexShrink: 0, marginTop: '4px'
               }}>
-                A
+                V
               </div>
             )}
 
@@ -1061,7 +1068,7 @@ function exportRoadmapAsText() {
               color: '#fff',
               padding: '14px 18px',
               borderRadius: msg.role === 'user' ? '18px 18px 4px 18px' : '4px 18px 18px 18px',
-              maxWidth: '78%',
+              maxWidth: isMobile() ? '85%' : '78%',
               fontSize: '14px',
               lineHeight: 1.7,
               border: msg.role === 'ai' ? '1px solid #1f1f1f' : 'none'
@@ -1198,7 +1205,7 @@ function exportRoadmapAsText() {
               fontSize: '14px',
               color: '#555'
             }}>
-              Alex is thinking...
+              Vyom is thinking...
             </div>
           </div>
         )}
@@ -1206,7 +1213,7 @@ function exportRoadmapAsText() {
 
       {/* Input */}
       <div style={{
-        padding: '16px 24px',
+        padding: isMobile() ? '12px 16px' : '16px 24px', 
         borderTop: '1px solid #1a1a1a',
         maxWidth: '740px',
         width: '100%',
@@ -1216,7 +1223,7 @@ function exportRoadmapAsText() {
       }}>
         <input
           type="text"
-          placeholder="Ask Alex anything..."
+          placeholder="Ask Vyom anything..."
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && !loading && sendMessage()}
@@ -1333,7 +1340,7 @@ function exportRoadmapAsText() {
             </>
           ) : (
             <div style={{ color: '#555', fontSize: '13px', textAlign: 'center', marginTop: '60px' }}>
-              Not enough data yet. Chat more with Alex first!
+              Not enough data yet. Chat more with Vyom first!
             </div>
           )}
         </div>
@@ -1343,7 +1350,7 @@ function exportRoadmapAsText() {
     position: 'fixed',
     top: '50%', left: '50%',
     transform: 'translate(-50%, -50%)',
-    width: '500px',
+    width: isMobile() ? '90vw' : '500px',
     maxHeight: '80vh',
     background: '#0a0a0a',
     border: '1px solid #1f1f1f',
@@ -1470,9 +1477,11 @@ function exportRoadmapAsText() {
       style={{
         position: 'fixed',
         top: 0, left: 0,
-        width: '100vw', height: '100vh',
-        background: 'rgba(0,0,0,0.8)',
-        zIndex: 300
+        width: '100vw' , height: '100vh',
+        background: 'rgba(0,0,0,0.85)',
+        zIndex: 300,
+        backdropFilter: 'blur(4px)'
+
       }}
     />
     
@@ -1480,7 +1489,7 @@ function exportRoadmapAsText() {
       position: 'fixed',
       top: '50%', left: '50%',
       transform: 'translate(-50%, -50%)',
-      width: '600px',
+      width: isMobile() ? '92vw' : '600px',
       maxHeight: '85vh',
       background: '#0a0a0a',
       border: '1px solid #1f1f1f',
@@ -1630,14 +1639,16 @@ function exportRoadmapAsText() {
       position: 'fixed',
       top: '50%', left: '50%',
       transform: 'translate(-50%, -50%)',
-      width: '650px',
+      width: isMobile() ? '92vw' : '600px',
       maxHeight: '90vh',
       background: '#0a0a0a',
       border: '1px solid #1f1f1f',
       borderRadius: '12px',
-      padding: '32px',
+      padding: isMobile() ? '20px' : '32px',
       overflowY: 'auto',
-      zIndex: 401
+      zIndex: 401,
+      display: 'flex',
+      flexDirection: 'column'
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
         <div>
@@ -1824,7 +1835,8 @@ function exportRoadmapAsText() {
         top: 0, left: 0,
         width: '100vw', height: '100vh',
         background: 'rgba(0,0,0,0.9)',
-        zIndex: 500
+        zIndex: 500,
+        backdropFilter: 'blur(4px)'
       }}
     />
 
@@ -1832,12 +1844,16 @@ function exportRoadmapAsText() {
       position: 'fixed',
       top: '50%', left: '50%',
       transform: 'translate(-50%, -50%)',
-      width: '600px',
+      width: isMobile() ? '92vw' : '600px',
       background: '#0a0a0a',
+      maxHeight: '85vh',
+      overflowY: 'auto',
       border: '1px solid #1f1f1f',
       borderRadius: '16px',
-      padding: '32px',
-      zIndex: 501
+      padding: isMobile() ? '20px' : '32px',
+      zIndex: 501,
+      display: 'flex',
+      flexDirection: 'column'
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
         <div>
