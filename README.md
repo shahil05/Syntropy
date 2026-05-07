@@ -1,4 +1,4 @@
-# 🎓 AI Learning Companion
+# 🎓 Syntropy
 
 > A fully adaptive AI tutor that learns *you* — tracks your weak spots, builds personalized roadmaps, generates quizzes, and remembers everything across sessions using Vector DB memory.
 
@@ -14,7 +14,7 @@
 
 Most learning apps give everyone the same content. This one doesn't.
 
-The AI Learning Companion builds a persistent model of *your* knowledge — what you know, what you're struggling with, and what you need next. Every session starts smarter than the last.
+The Syntropy builds a persistent model of *your* knowledge — what you know, what you're struggling with, and what you need next. Every session starts smarter than the last.
 
 ---
 
