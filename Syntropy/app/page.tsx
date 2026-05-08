@@ -62,9 +62,18 @@ export default function Home() {
   const [showTimerSettings, setShowTimerSettings] = useState(false)
 
   // Add this helper function
-function isMobile() {
-  return typeof window !== 'undefined' && window.innerWidth < 768
-}
+// 1. Create the state (default to false for the server)
+const [mobile, setMobile] = useState(false);
+
+// 2. Update it only once the component mounts on your Mac/Browser
+useEffect(() => {
+  const checkMobile = () => setMobile(window.innerWidth < 768);
+  
+  checkMobile(); // Check on load
+  window.addEventListener('resize', checkMobile); // Check on window resize
+  
+  return () => window.removeEventListener('resize', checkMobile);
+}, []);
 // app/page.tsx 
 
 useEffect(() => {
@@ -520,29 +529,28 @@ function exportRoadmapAsText() {
         borderRadius: '999px',
         marginBottom: '24px'
       }}>
-        AI-Powered Learning
+        Syntropy v1.0
       </div>
 
       <h1 style={{
-        fontSize: isMobile() ? '32px' : '48px',
+        fontSize: mobile ? '32px' : '48px',
         fontWeight: 700,
         textAlign: 'center',
         marginBottom: '20px',
         lineHeight: 1.2
       }}>
-        Learn smarter with{' '}
-        <span style={{ color: '#7F77DD' }}>AI</span>
-        {' '}that remembers you
+        Master any topic with <span style={{ color: '#7F77DD' }}>Syntropy</span>
       </h1>
+      
 
       <p style={{
-        fontSize: isMobile() ? '16px' : '18px',
+        fontSize: mobile ? '16px' : '18px',
         color: '#888',
         textAlign: 'center',
         maxWidth: '500px',
         lineHeight: 1.7,
         marginBottom: '36px',
-        padding: isMobile() ? '0 20px' : '0'
+        padding: mobile ? '0 20px' : '0'
 
       }}>
         Your personal AI tutor that teaches from first principles, adapts to your pace, and never moves on until you actually get it.
@@ -801,7 +809,7 @@ function exportRoadmapAsText() {
     position: 'sticky',
     top: 0,
     background: timerMode === 'focus' ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #f59e0b, #d97706)',
-    padding: isMobile() ? '12px 16px' : '16px 20px',
+    padding: mobile ? '12px 16px' : '16px 20px',
     borderRadius: '12px',
     marginBottom: '16px',
     zIndex: 100,
@@ -1068,7 +1076,7 @@ function exportRoadmapAsText() {
               color: '#fff',
               padding: '14px 18px',
               borderRadius: msg.role === 'user' ? '18px 18px 4px 18px' : '4px 18px 18px 18px',
-              maxWidth: isMobile() ? '85%' : '78%',
+              maxWidth: mobile ? '85%' : '78%',
               fontSize: '14px',
               lineHeight: 1.7,
               border: msg.role === 'ai' ? '1px solid #1f1f1f' : 'none'
@@ -1213,7 +1221,7 @@ function exportRoadmapAsText() {
 
       {/* Input */}
       <div style={{
-        padding: isMobile() ? '12px 16px' : '16px 24px', 
+        padding: mobile ? '12px 16px' : '16px 24px', 
         borderTop: '1px solid #1a1a1a',
         maxWidth: '740px',
         width: '100%',
@@ -1350,7 +1358,7 @@ function exportRoadmapAsText() {
     position: 'fixed',
     top: '50%', left: '50%',
     transform: 'translate(-50%, -50%)',
-    width: isMobile() ? '90vw' : '500px',
+    width: mobile ? '90vw' : '500px',
     maxHeight: '80vh',
     background: '#0a0a0a',
     border: '1px solid #1f1f1f',
@@ -1489,7 +1497,7 @@ function exportRoadmapAsText() {
       position: 'fixed',
       top: '50%', left: '50%',
       transform: 'translate(-50%, -50%)',
-      width: isMobile() ? '92vw' : '600px',
+      width: mobile ? '92vw' : '600px',
       maxHeight: '85vh',
       background: '#0a0a0a',
       border: '1px solid #1f1f1f',
@@ -1639,12 +1647,12 @@ function exportRoadmapAsText() {
       position: 'fixed',
       top: '50%', left: '50%',
       transform: 'translate(-50%, -50%)',
-      width: isMobile() ? '92vw' : '600px',
+      width: mobile ? '92vw' : '600px',
       maxHeight: '90vh',
       background: '#0a0a0a',
       border: '1px solid #1f1f1f',
       borderRadius: '12px',
-      padding: isMobile() ? '20px' : '32px',
+      padding: mobile ? '20px' : '32px',
       overflowY: 'auto',
       zIndex: 401,
       display: 'flex',
@@ -1844,13 +1852,13 @@ function exportRoadmapAsText() {
       position: 'fixed',
       top: '50%', left: '50%',
       transform: 'translate(-50%, -50%)',
-      width: isMobile() ? '92vw' : '600px',
+      width: mobile ? '92vw' : '600px',
       background: '#0a0a0a',
       maxHeight: '85vh',
       overflowY: 'auto',
       border: '1px solid #1f1f1f',
       borderRadius: '16px',
-      padding: isMobile() ? '20px' : '32px',
+      padding: mobile ? '20px' : '32px',
       zIndex: 501,
       display: 'flex',
       flexDirection: 'column'
