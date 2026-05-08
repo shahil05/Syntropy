@@ -6,7 +6,7 @@
 
 *Adaptive learning powered by LLaMA 3.3 70B — with memory, not just chat.*
 
-[![Live Demo](https://img.shields.io/badge/🚀%20Live%20Demo-syntropy--eta.vercel.app-6366f1?style=for-the-badge)](https://syntropy-eta.vercel.app)
+[![Live Demo](https://img.shields.io/badge/🚀%20Live%20Demo-syntropy--eta.vercel.app-6366f1?style=for-the-badge)](https://syntropy-v7ia.vercel.app/)
 
 ![Next.js](https://img.shields.io/badge/Next.js%2014-000000?style=flat-square&logo=nextdotjs&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)
